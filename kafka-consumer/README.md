@@ -47,6 +47,14 @@ You can then execute your native executable with: `./target/kafka-consumer-1.0.0
 
 If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.
 
+## Deploy in OpenShift
+
+```sh
+oc apply -f k8s/configmap.yaml
+oc apply -f k8s/kafkatopic.yaml
+./mvnw install -Dquarkus.kubernetes.deploy=true
+```
+
 ## Provided Code
 
 ### RESTEasy JAX-RS

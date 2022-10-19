@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-consumer-config
+  labels:
+    app: kafka-consumer
+data:
+  KAFKA_BOOTSTRAP_SERVERS: my-cluster-kafka-bootstrap.my-kafka.svc:9092
