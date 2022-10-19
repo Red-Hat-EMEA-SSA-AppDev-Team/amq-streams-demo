@@ -1,0 +1,4 @@
+PRODUCER keyed-message
+topic: event
+key: 1
+record content
