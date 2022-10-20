@@ -26,8 +26,10 @@ spec:
       transaction.state.log.replication.factor: 3
       transaction.state.log.min.isr: 2
       default.replication.factor: 3
-      min.insync.replicas: 2
+      min.insync.replicas: 1
       inter.broker.protocol.version: "3.2"
+      log.retention.check.interval.ms: 120000
+      log.retention.ms: 120000
     storage:
       type: jbod
       volumes:
