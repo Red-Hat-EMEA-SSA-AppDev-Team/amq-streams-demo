@@ -78,3 +78,21 @@ Follow the instuctions:
 * file:///kafka-consumer/README.md[Consumer App Readme]
 
 * file:///kafka-producer/README.md[Producer App Readme]
+
+== Demo routines
+
+. Show consumer logs
+. Show the topic distribution
++
+[source,shell]
+----
+oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
+                                --bootstrap-server my-cluster-kafka-bootstrap:9092 \
+                                --describe --topic event
+----
+
+. Kill one of the broker
+
+. Show again the topic distribution on the cluster members
+
+. Show the dashboard
