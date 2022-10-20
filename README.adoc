@@ -20,7 +20,7 @@ oc apply -f k8s/02-kafkatopic.yaml
 
 == Enabling monitoring
 
-NOTE: This demo relies on the availability of the _cluster-admin_ role.
+NOTE: This demo relies on the _cluster-admin_ role.
 
 Create cluster-monitoring-config ConfigMap object:
 
@@ -65,3 +65,16 @@ oc create route edge --service=grafana --namespace=my-kafka
 
 Login with the default credentials (`admin/admin`) and then change the password.
 
+Load the dashboard definitions from `grafana-dashboards` folder:
+
+- `strimzi-kafka.json`
+- `strimzi-kafka-exporter.json`
+
+== Install the consumer and producer applications
+
+Follow the instuctions:
+
+
+* file:///kafka-consumer/README.md[Consumer App Readme]
+
+* file:///kafka-producer/README.md[Producer App Readme]
