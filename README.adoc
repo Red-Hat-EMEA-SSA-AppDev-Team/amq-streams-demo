@@ -4,12 +4,64 @@ The goal of this demo is to show some of the key capabilities of Red Hat AMQ Str
 
 One of the key feature of *Red Hat® AMQ Streams* is bringing the power of *Apache Kafka* in *OpenShift Container Platform*, leveraging the Strimzi project.footnote:[https://strimzi.io/]
 
-== Demo Initialization
+== Create Kafka broker and topic
 
-.Create the broker and the topic
+Create a Broker with metrics enabled:
+
+- consumer lag
+- consumer offsets
+
 [source,ruby]
 ----
-oc apply -f k8s/kafka.yaml
-oc apply -f k8s/kafkatopic.yaml
+oc new-project my-kafka
+oc apply -f k8s/01-kafka-metrics.yaml
+oc apply -f k8s/02-kafkatopic.yaml
 ----
+
+== Enabling monitoring
+
+NOTE: This demo relies on the availability of the _cluster-admin_ role.
+
+Create cluster-monitoring-config ConfigMap object:
+
+[source,shell]
+----
+oc apply -f k8s/03-cluster-monitor.yaml
+----
+
+Check that the prometheus-operator, prometheus-user-workload and thanos-ruler-user-workload pods are running in the openshift-user-workload-monitoring project. It might take a short while for the pods to start:
+
+[source,shell]
+----
+oc -n openshift-user-workload-monitoring get pod
+----
+
+Enable:
+- monitoring for kafka resources
+- prometheus rules
+
+
+[source,shell]
+----
+oc apply -f k8s/04-pod-monitor.yaml -n my-kafka
+oc apply -f k8s/05-prometheus-rules.yaml -n my-kafka
+----
+
+Create a service account for Grafana:
+
+[source,shell]
+----
+oc apply -f k8s/06-graphana-auth.yaml -n my-kafka
+----
+
+Create Prometheus datasource for Grafana and deploy Grafana
+
+[source,shell]
+----
+k8s/07-create-datasource.sh
+oc apply -f k8s/08-grafana.yaml
+oc create route edge --service=grafana --namespace=my-kafka
+----
+
+Login with the default credentials (`admin/admin`) and then change the password.
 
