@@ -1,0 +1,15 @@
+= AMQ Streams (Kafka) demo
+
+The goal of this demo is to show some of the key capabilities of Red Hat AMQ Streams.
+
+One of the key feature of *Red Hat® AMQ Streams* is bringing the power of *Apache Kafka* in *OpenShift Container Platform*, leveraging the Strimzi project.footnote:[https://strimzi.io/]
+
+== Demo Initialization
+
+.Create the broker and the topic
+[source,ruby]
+----
+oc apply -f k8s/kafka.yaml
+oc apply -f k8s/kafkatopic.yaml
+----
+
