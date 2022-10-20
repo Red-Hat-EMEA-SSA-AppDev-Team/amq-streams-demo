@@ -1,8 +1,0 @@
-apiVersion: kafka.strimzi.io/v1beta2
-kind: KafkaTopic
-metadata:
-  name: event
-spec:
-  partitions: 12
-  replicas: 3
-  topicName: event

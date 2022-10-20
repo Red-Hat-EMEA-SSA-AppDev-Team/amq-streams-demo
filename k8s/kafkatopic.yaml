@@ -1,0 +1,14 @@
+kind: KafkaTopic
+apiVersion: kafka.strimzi.io/v1beta2
+metadata:
+  name: event
+  labels:
+    strimzi.io/cluster: my-cluster
+  namespace: my-kafka
+spec:
+  partitions: 12
+  replicas: 3
+  config:
+    retention.ms: 1000000
+    segment.bytes: 1073741824
+    min.insync.replicas: 1
