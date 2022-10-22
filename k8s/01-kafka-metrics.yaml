@@ -28,8 +28,8 @@ spec:
       default.replication.factor: 3
       min.insync.replicas: 1
       inter.broker.protocol.version: "3.2"
-      log.retention.check.interval.ms: 120000
-      log.retention.ms: 120000
+      log.retention.check.interval.ms: 600000
+      log.retention.ms: 600000
     storage:
       type: jbod
       volumes:
