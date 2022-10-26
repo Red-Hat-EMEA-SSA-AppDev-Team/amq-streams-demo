@@ -51,7 +51,6 @@ If you want to learn more about building native executables, please consult http
 
 ```sh
 oc apply -f k8s/configmap.yaml
-oc apply -f k8s/kafkatopic.yaml
 ./mvnw install -Dquarkus.kubernetes.deploy=true
 ```
 
