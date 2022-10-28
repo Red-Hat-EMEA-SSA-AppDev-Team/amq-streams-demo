@@ -16,11 +16,12 @@ spec:
         type: internal
         tls: true
     readinessProbe:
-      initialDelaySeconds: 15
+      initialDelaySeconds: 30
       timeoutSeconds: 5
     livenessProbe:
-      initialDelaySeconds: 15
+      initialDelaySeconds: 30
       timeoutSeconds: 5
+      periodSeconds: 60
     config:
       offsets.topic.replication.factor: 3
       transaction.state.log.replication.factor: 3
