@@ -19,6 +19,13 @@ public class EventConsumer {
     public void consume(ConsumerRecord<Long, String> record) {
         Long key = record.key(); // Can be `null` if the incoming record has no key
 
+        // reset message
+        if (key == 1) {
+            last = 1L;
+            duplicated = 0L;
+            check.clear();
+        }
+
         for (long i = last; i < key; i++) {
             check.put(i, false);
         }
