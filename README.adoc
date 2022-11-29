@@ -82,6 +82,19 @@ Follow the instuctions:
 == Demo routines
 
 . Show consumer logs
++
+[source,shell]
+----
+oc logs --tail=20 -f --selector="app.kubernetes.io/name=kafka-consumer"
+----
+
+. Show producer logs
++
+[source,shell]
+----
+oc logs --tail=20 -f --selector="app.kubernetes.io/name=kafka-producer"
+----
+
 . Show the topic distribution
 +
 [source,shell]
