@@ -24,6 +24,7 @@ public class KafkaProducer {
         return Multi.createFrom().ticks().every(Duration.ofMillis(tickFrequency))
             .map(x -> {
                 lastKey++;
+                System.out.println("Generating message key: "+lastKey);
                 return KafkaRecord.of(lastKey, "demo message "+lastKey);
             });
     }

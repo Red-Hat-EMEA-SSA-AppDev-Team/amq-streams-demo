@@ -13,6 +13,7 @@ public class EventConsumer {
 
     private static TreeMap<Long, Boolean> check = new TreeMap<>();
     private static Long last = 1L;
+    private static Long duplicated = 0L;
     
     @Incoming("event")
     public void consume(ConsumerRecord<Long, String> record) {
@@ -21,11 +22,14 @@ public class EventConsumer {
         for (long i = last; i < key; i++) {
             check.put(i, false);
         }
+
+        if (key < last && !check.containsKey(key))
+            duplicated++;
+
         if (key >= last) last=key+1L;
 
         check.remove(key);
 
-        System.out.println("key:" + key);
-        System.out.println("Missing messages: "+check.size());
+        System.out.println(String.format("Current Key: %d, Missing messages: %d, Duplicated msg: %d", key, check.size(), duplicated));
     }
 }
