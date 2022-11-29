@@ -23,6 +23,13 @@ public class KafkaProducer {
     public Multi<KafkaRecord<Long,String>> generate() {
         return Multi.createFrom().ticks().every(Duration.ofMillis(tickFrequency))
             .map(x -> {
+                // workaround to avoid other events to surpass the first
+                if(lastKey == 1)
+                    try {
+                        Thread.sleep(3000L);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 lastKey++;
                 System.out.println("Generating message key: "+lastKey);
                 return KafkaRecord.of(lastKey, "demo message "+lastKey);
