@@ -50,7 +50,6 @@ If you want to learn more about building native executables, please consult http
 ## Deploy in OpenShift
 
 ```sh
-oc apply -f k8s/configmap.yaml
 ./mvnw install -Dquarkus.kubernetes.deploy=true
 ```
 
