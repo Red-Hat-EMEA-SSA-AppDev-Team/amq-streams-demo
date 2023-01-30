@@ -109,3 +109,21 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
 . Show again the topic distribution on the cluster members
 
 . Show the dashboard
+
+
+== Clean up
+
+Delete only the kafka broker and the topics:
+
+[source,shell]
+----
+oc delete kafkatopics --selector="strimzi.io/cluster=my-cluster"
+oc delete kafka my-cluster
+----
+
+Drop the PVC:
+
+[source,shell]
+----
+oc delete pvc --selector="strimzi.io/cluster=my-cluster"
+----
