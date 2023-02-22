@@ -72,8 +72,13 @@ Load the dashboard definitions from `grafana-dashboards` folder:
 
 == Install the consumer and producer applications
 
-Follow the instuctions:
+[source,shell]
+----
+mvn -f kafka-consumer/pom.xml package -Dquarkus.kubernetes.deploy=true -DskipTests
+mvn -f kafka-producer/pom.xml package -Dquarkus.kubernetes.deploy=true -DskipTests
+----
 
+Further information about the applications:
 
 * file:///kafka-consumer/README.md[Consumer App Readme]
 
@@ -110,6 +115,95 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
 
 . Show the dashboard
 
+. Add the cruise control
++
+[source,shell]
+----
+oc patch kafka my-cluster --patch '{"spec":{"cruiseControl": {}}}' --type=merge
+----
+
+. Point out the partition leaders
++
+[source,shell]
+----
+oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
+            --bootstrap-server my-cluster-kafka-bootstrap:9092 \
+            --describe --topic event
+----
+
+. Change the producer to create messages on a set of partitions which have the same leader
++
+[source,shell]
+----
+oc edit configmap kafka-producer-config
+----
++
+update the variables in order to produce only on selected partitions, e.g.:
++
+[source,shell]
+----
+  PRODUCER_PARTED: "true"
+  PRODUCER_PARTITIONS: 0,3,6
+----
++
+bump the kafka producer application:
++
+[source,shell]
+----
+oc scale deployment/kafka-producer --replicas=0
+oc scale deployment/kafka-producer --replicas=1
+----
+
+. Check that partitions grows at different paces, running the following command:
++
+[source,shell]
+----
+oc exec -it my-cluster-kafka-0 -- bin/kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list localhost:9092 --topic event
+----
+
+. Trigger the rebalance analysis:
++
+[source,shell]
+----
+oc apply -f k8s/09-kafka-rebalance-full.yaml
+----
+
+. Review the optimization proposal:
++
+[source,shell]
+----
+oc describe kafkarebalance my-rebalance
+----
+
+. Approve the proposal
++
+[source,shell]
+----
+oc annotate kafkarebalances.kafka.strimzi.io my-rebalance strimzi.io/rebalance=approve
+----
++
+later on you can refresh the analysis:
++
+[source,shell]
+----
+oc annotate kafkarebalances.kafka.strimzi.io my-rebalance strimzi.io/rebalance=refresh
+----
+
+. Rebalancing takes some time, run again the following command and wait for `Status: True`
++
+[source,shell]
+----
+oc describe kafkarebalance my-rebalance
+----
+
+. Run again the decribe topic command, you should spot the overloaded partitions moved on different leaders:
++
+[source,shell]
+----
+oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
+            --bootstrap-server my-cluster-kafka-bootstrap:9092 \
+            --describe --topic event
+----
 
 == Clean up
 
