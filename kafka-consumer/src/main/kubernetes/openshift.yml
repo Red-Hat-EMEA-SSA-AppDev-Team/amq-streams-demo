@@ -3,6 +3,6 @@ kind: ConfigMap
 metadata:
   name: kafka-consumer-config
   labels:
-    app: kafka-consumer
+    app.kubernetes.io/name: kafka-producer
 data:
   KAFKA_BOOTSTRAP_SERVERS: my-cluster-kafka-bootstrap.my-kafka.svc:9092
