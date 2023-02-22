@@ -1,6 +1,5 @@
 package com.redhat.demo;
 
-import java.util.SortedMap;
 import java.util.TreeMap;
 
 import javax.enterprise.context.ApplicationScoped;
