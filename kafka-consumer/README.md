@@ -13,7 +13,7 @@ Read messages from Kafka and ensure the consistency:
 
 It operates in two modes:
 
-- in memory: keep track of the missing messages in a Hash
+- in memory: keep track of the missing messages in a TreeMap
 - persistence: store messages in a PostgreSQL DB
 
 ### DB operations
