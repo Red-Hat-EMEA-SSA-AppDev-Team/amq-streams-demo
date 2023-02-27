@@ -1,8 +1,14 @@
-# kafka-consumer Project
+# Kafka Producer Project
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+
+## Goal of this project
+
+Generate messages in kafka at a given interval of time.
+For demo purposes it can generate messages only on given partitions.
+
 
 ## Running the application in dev mode
 
@@ -52,11 +58,3 @@ If you want to learn more about building native executables, please consult http
 ```sh
 ./mvnw install -Dquarkus.kubernetes.deploy=true
 ```
-
-## Provided Code
-
-### RESTEasy JAX-RS
-
-Easily start your RESTful Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started#the-jax-rs-resources)

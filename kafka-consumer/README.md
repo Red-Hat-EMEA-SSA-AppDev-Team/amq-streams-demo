@@ -4,6 +4,33 @@ This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
 
+## Goal of this project
+
+Read messages from Kafka and ensure the consistency:
+
+- no missing messages
+- no duplicate messages
+
+It operates in two modes:
+
+- in memory: keep track of the missing messages in a Hash
+- persistence: store messages in a PostgreSQL DB
+
+### DB operations
+
+Check missing messages (gaps)
+
+```sql
+select events + 1 as gap_start, 
+       next_nr - 1 as gap_end
+from (
+  select events, 
+         lead(events) over (order by events) as next_nr
+  from t
+) nr
+where events + 1 <> next_nr;
+```
+
 ## Running the application in dev mode
 
 You can run your application in dev mode that enables live coding using:
