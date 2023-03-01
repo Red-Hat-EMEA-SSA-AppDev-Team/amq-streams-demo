@@ -13,7 +13,16 @@ public class EventConsumer {
     private static TreeMap<Long, Boolean> check = new TreeMap<>();
     private static Long last = 1L;
     private static Long duplicated = 0L;
+    private boolean failure;
     
+    public boolean isFailure() {
+        return failure;
+    }
+
+    public void setFailure(boolean failure) {
+        this.failure = failure;
+    }
+
     @Incoming("event")
     public void consume(ConsumerRecord<Long, String> record) {
         Long key = record.key(); // Can be `null` if the incoming record has no key
@@ -37,5 +46,10 @@ public class EventConsumer {
         check.remove(key);
 
         System.out.println(String.format("Current Key: %d, Missing messages: %d, Duplicated msg: %d", key, check.size(), duplicated));
+
+        if (isFailure()) {
+            setFailure(false);
+            throw new RuntimeException();
+        }
     }
 }

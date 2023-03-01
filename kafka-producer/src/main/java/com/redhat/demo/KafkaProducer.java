@@ -27,7 +27,17 @@ public class KafkaProducer {
     @ConfigProperty(name = "producer.parted", defaultValue = "false")
     private Boolean parted;
 
+    private Boolean failure = false;
+
     List<Integer> partitionList = null;
+    
+    public Boolean getFailure() {
+        return failure;
+    }
+
+    public void setFailure(Boolean failure) {
+        this.failure = failure;
+    }
 
     @Outgoing("event-out")
     public Multi<KafkaRecord<Long, String>> generate() {
@@ -46,13 +56,21 @@ public class KafkaProducer {
                     lastKey++;
                     if ( parted == false ) {
                         System.out.println("Generating message key: " + lastKey);
+                        failureSimulation();
                         return KafkaRecord.of(lastKey, "demo message "+lastKey);
                     } else {
                         int iteration = lastKey.intValue() % partitionList.size();
                         int partition = partitionList.get(iteration);
                         System.out.println("Generating message counter: " + lastKey + " on partition: " +partition);
+                        failureSimulation();
                         return KafkaRecord.of(null, Long.valueOf(partition), "demo message " + lastKey, null, partition);
                     }
                 });
+    }
+
+    private void failureSimulation() {
+        if (getFailure()) {
+            throw new RuntimeException();
+        }
     }
 }
