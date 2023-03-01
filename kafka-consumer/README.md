@@ -40,6 +40,23 @@ You can run your application in dev mode that enables live coding using:
 
 > **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
 
+### Disable DevServices
+
+This application requires a Kafka broker up and running to work properly.
+By default, quarkus dev mode initialize the kafka services, but you can override this behavior:
+
+1. Disable dev services in `application.properties`:
+
+```
+quarkus.devservices.enabled=false
+```
+
+2. Start the kafka container:
+
+```sh
+podman run --rm -it -p 9092:9092 -e kafka.bootstrap.servers=OUTSIDE://localhost:9092 docker.io/vectorized/redpanda
+```
+
 ## Packaging and running the application
 
 The application can be packaged using:
