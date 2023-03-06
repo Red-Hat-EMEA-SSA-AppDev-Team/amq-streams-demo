@@ -1,0 +1,85 @@
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-4.4.2
+
+# NOTE: If you generated this yaml from an unprivileged and rootless podman container on an SELinux
+# enabled system, check the podman generate kube man page for steps to follow to ensure that your pod/container
+# has the right permissions to access the volumes added.
+
+# TIP: If you want the same volumes across restart UNCOMMENT the volume sections
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2023-03-06T07:36:28Z"
+  labels:
+    app: postgres-pod
+  name: postgres-pod
+spec:
+  containers:
+  - args:
+    - postgres
+    env:
+    - name: POSTGRES_USER
+      value: quarkus
+    - name: POSTGRES_DB
+      value: quarkus
+    - name: POSTGRES_PASSWORD
+      value: quarkus
+    image: docker.io/library/postgres:14
+    name: postgres
+    ports:
+    - containerPort: 5432
+      hostPort: 5432
+    stdin: true
+    tty: true
+#    volumeMounts:
+#    - mountPath: /var/lib/postgresql/data
+#      name: 31d7943f155054f8d1980683c0aa9f118f666e5ea3b662d328def501c0ab92a9-pvc
+#  volumes:
+#  - name: 31d7943f155054f8d1980683c0aa9f118f666e5ea3b662d328def501c0ab92a9-pvc
+#    persistentVolumeClaim:
+#      claimName: 31d7943f155054f8d1980683c0aa9f118f666e5ea3b662d328def501c0ab92a9
+
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-4.4.2
+
+# NOTE: If you generated this yaml from an unprivileged and rootless podman container on an SELinux
+# enabled system, check the podman generate kube man page for steps to follow to ensure that your pod/container
+# has the right permissions to access the volumes added.
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2023-03-06T07:37:03Z"
+  labels:
+    app: kafka-pod
+  name: kafka-pod
+spec:
+  containers:
+  - args:
+    - redpanda
+    - start
+    - --overprovisioned
+    env:
+    - name: kafka.bootstrap.servers
+      value: OUTSIDE://localhost:9092
+    image: docker.io/vectorized/redpanda:latest
+    name: kafka
+    ports:
+    - containerPort: 9092
+      hostPort: 9092
+    securityContext: {}
+    stdin: true
+    tty: true
+#    volumeMounts:
+#    - mountPath: /var/lib/redpanda/data
+#      name: 2b13e4f774fef99841041229412ec8d8710c5ff73038aa0c2f0f946732b77d82-pvc
+#  volumes:
+#  - name: 2b13e4f774fef99841041229412ec8d8710c5ff73038aa0c2f0f946732b77d82-pvc
+#    persistentVolumeClaim:
+#      claimName: 2b13e4f774fef99841041229412ec8d8710c5ff73038aa0c2f0f946732b77d82
+

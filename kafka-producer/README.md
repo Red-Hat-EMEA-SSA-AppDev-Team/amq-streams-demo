@@ -4,6 +4,8 @@ This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
 
+This project relies on the services started by the consumer, which must to be started beforehand.
+
 ## Goal of this project
 
 Generate messages in kafka at a given interval of time.

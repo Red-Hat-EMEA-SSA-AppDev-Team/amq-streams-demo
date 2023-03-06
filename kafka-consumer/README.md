@@ -4,6 +4,8 @@ This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
 
+It works in pair with Kafka producer, since the producer relies on the services started by the consumer you have to start the this project before.
+
 ## Goal of this project
 
 Read messages from Kafka and ensure the consistency:
@@ -33,7 +35,7 @@ where key + 1 <> next_nr;
 
 Check duplicated messages
 
-```sql
+```sqlkafka-consumer/
 select * from (
 select key, count(id) as c From event group by key) count_key
 where c > 1
@@ -55,15 +57,29 @@ By default, quarkus dev mode initialize the kafka services, but you can override
 
 1. Disable dev services in `application.properties`:
 
-```
-quarkus.devservices.enabled=false
-```
+   ```
+   quarkus.devservices.enabled=false
+   ```
 
-2. Start the kafka container:
+2. Start the backend services via `podman kube play`
 
-```sh
-podman run --rm -it -p 9092:9092 -e kafka.bootstrap.servers=OUTSIDE://localhost:9092 docker.io/vectorized/redpanda
-```
+   ```sh
+   podman kube play src/main/kubernetes/dev-services.yaml
+   ```
+
+Alternatively you can start containers with multiple commands:
+
+1. Start the kafka container:
+
+   ```sh
+   podman run --rm -it -p 9092:9092 -e kafka.bootstrap.servers=OUTSIDE://localhost:9092 docker.io/vectorized/redpanda
+   ```
+
+2. Start postgres:
+
+   ```sh
+   podman run --rm -it -p 5432:5432 -e POSTGRES_USER=quarkus -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=quarkus docker.io/library/postgres:14
+   ```
 
 ## Packaging and running the application
 
