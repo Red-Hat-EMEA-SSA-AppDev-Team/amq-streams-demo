@@ -35,7 +35,7 @@ where key + 1 <> next_nr;
 
 Check duplicated messages
 
-```sqlkafka-consumer/
+```sql
 select * from (
 select key, count(id) as c From event group by key) count_key
 where c > 1
