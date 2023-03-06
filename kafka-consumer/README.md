@@ -21,14 +21,22 @@ It operates in two modes:
 Check missing messages (gaps)
 
 ```sql
-select events + 1 as gap_start, 
+select key + 1 as gap_start, 
        next_nr - 1 as gap_end
 from (
-  select events, 
-         lead(events) over (order by events) as next_nr
-  from t
+  select key, 
+         lead(key) over (order by key) as next_nr
+  from event
 ) nr
-where events + 1 <> next_nr;
+where key + 1 <> next_nr;
+```
+
+Check duplicated messages
+
+```sql
+select * from (
+select key, count(id) as c From event group by key) count_key
+where c > 1
 ```
 
 ## Running the application in dev mode
