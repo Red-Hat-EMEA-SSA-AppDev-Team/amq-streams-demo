@@ -3,14 +3,17 @@ package com.redhat.demo;
 import java.util.TreeMap;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.persistence.PersistenceException;
-import javax.transaction.Transactional;
+import javax.enterprise.context.control.ActivateRequestContext;
+import javax.inject.Inject;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.hibernate.reactive.mutiny.Mutiny;
 
 import com.redhat.demo.model.Event;
 import com.redhat.demo.model.KafkaState;
+
+import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class EventConsumer {
@@ -19,6 +22,9 @@ public class EventConsumer {
     private static Long last = 1L;
     private static Long duplicated = 0L;
     private boolean failure;
+
+    @Inject
+    Mutiny.Session session;
 
     public boolean isFailure() {
         return failure;
@@ -29,8 +35,8 @@ public class EventConsumer {
     }
 
     @Incoming("event")
-    @Transactional
-    public void consume(ConsumerRecord<Long, String> record) {
+    @ActivateRequestContext
+    public Uni<Void> consume(ConsumerRecord<Long, String> record) {
         Long key = record.key(); // Can be `null` if the incoming record has no key
 
         // reset message
@@ -44,42 +50,43 @@ public class EventConsumer {
             check.put(i, false);
         }
 
-        if (key < last && !check.containsKey(key))
-            duplicated++;
+        duplicated++;
 
         if (key >= last)
             last = key + 1L;
+        if (key < last && !check.containsKey(key))
 
-        check.remove(key);
+            check.remove(key);
 
         System.out.println(String.format("Current Key: %d, Missing messages: %d, Duplicated msg: %d", key, check.size(),
                 duplicated));
 
-        persist(record);
+        var result = persist(record);
         if (isFailure()) {
             setFailure(false);
             throw new RuntimeException();
         }
+        return result;
     }
 
-    public void persist(ConsumerRecord<Long, String> record) {
-        try {
-
+    public Uni<Void> persist(ConsumerRecord<Long, String> record) {
+        return session.withTransaction(t -> {
             KafkaState state = new KafkaState();
             state.topic = record.topic();
             state.partition = record.partition();
             state.offsetN = record.offset();
             state.persist();
-            
+
             Event event = new Event();
             event.key = record.key();
             event.message = record.value();
 
-            event.persistAndFlush();
-        } catch (PersistenceException pe) {
-            System.out.println(">>> "+pe);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            return event.persistAndFlush().replaceWithVoid();
+        }).onTermination()
+                .call(() -> session.close())
+                .onFailure().call(t -> {
+                    System.out.println(t);
+                    return session.close();
+                });
     }
 }
