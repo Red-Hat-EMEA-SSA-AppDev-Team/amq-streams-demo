@@ -35,7 +35,6 @@ public class EventConsumer {
     }
 
     @Incoming("event")
-    @ActivateRequestContext
     public Uni<Void> consume(ConsumerRecord<Long, String> record) {
         Long key = record.key(); // Can be `null` if the incoming record has no key
 
@@ -69,24 +68,25 @@ public class EventConsumer {
         return result;
     }
 
+    @ActivateRequestContext
     public Uni<Void> persist(ConsumerRecord<Long, String> record) {
-        return session.withTransaction(t -> {
+        return session
+        .withTransaction(t -> {
             KafkaState state = new KafkaState();
             state.topic = record.topic();
             state.partition = record.partition();
             state.offsetN = record.offset();
-            state.persist();
-
+            
+            return state.persist().replaceWithVoid();
+        })
+        .chain(none -> {
             Event event = new Event();
             event.key = record.key();
             event.message = record.value();
 
-            return event.persistAndFlush().replaceWithVoid();
-        }).onTermination()
-                .call(() -> session.close())
-                .onFailure().call(t -> {
-                    System.out.println(t);
-                    return session.close();
-                });
+            return event.persist().replaceWithVoid();
+        })
+        .onTermination()
+                .call(() -> session.close());
     }
 }
