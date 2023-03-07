@@ -71,22 +71,26 @@ public class EventConsumer {
     @ActivateRequestContext
     public Uni<Void> persist(ConsumerRecord<Long, String> record) {
         return session
-        .withTransaction(t -> {
-            KafkaState state = new KafkaState();
-            state.topic = record.topic();
-            state.partition = record.partition();
-            state.offsetN = record.offset();
-            
-            return state.persist().replaceWithVoid();
-        })
-        .chain(none -> {
-            Event event = new Event();
-            event.key = record.key();
-            event.message = record.value();
+                .withTransaction(t -> {
+                    KafkaState state = new KafkaState();
+                    state.topic = record.topic();
+                    state.partition = record.partition();
+                    state.offsetN = record.offset();
 
-            return event.persist().replaceWithVoid();
-        })
-        .onTermination()
-                .call(() -> session.close());
+                    return state.persist();
+                })
+                .onFailure().recoverWithNull()
+                .chain(t -> {
+                    if (t != null) {
+                        Event event = new Event();
+                        event.key = record.key();
+                        event.message = record.value();
+
+                        return event.persistAndFlush().replaceWithVoid();
+                    } else {
+                        return Uni.createFrom().nullItem();
+                    }
+                })
+                .onTermination().call(() -> session.close());
     }
 }
