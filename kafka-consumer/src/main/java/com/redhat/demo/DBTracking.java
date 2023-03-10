@@ -42,6 +42,7 @@ public class DBTracking implements TrackingService {
 
                         return event.persistAndFlush().replaceWithVoid();
                     } else {
+                        System.out.println(">>> state insert failute");
                         return Uni.createFrom().nullItem();
                     }
                 })
