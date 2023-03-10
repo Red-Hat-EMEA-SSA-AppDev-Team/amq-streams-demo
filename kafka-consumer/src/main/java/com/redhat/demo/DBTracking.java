@@ -10,16 +10,20 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import com.redhat.demo.model.Event;
 import com.redhat.demo.model.KafkaState;
 
+import io.quarkus.arc.lookup.LookupIfProperty;
 import io.smallrye.mutiny.Uni;
 
+@LookupIfProperty(name = "tracking.db", stringValue = "true")
 @ApplicationScoped
-public class DBTracking {
+public class DBTracking implements TrackingService {
 
     @Inject
     Mutiny.Session session;
 
+    @Override
     @ActivateRequestContext
-    public Uni<Void> persist(ConsumerRecord<Long, String> record) {
+    public Uni<Void> track(ConsumerRecord<Long, String> record) {
+        System.out.println("DBTracking.track() - key: "+record.key());
         return session
                 .withTransaction(t -> {
                     KafkaState state = new KafkaState();

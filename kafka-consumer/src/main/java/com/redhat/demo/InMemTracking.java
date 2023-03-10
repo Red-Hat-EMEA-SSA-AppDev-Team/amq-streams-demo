@@ -4,14 +4,20 @@ import java.util.TreeMap;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+
+import io.quarkus.arc.lookup.LookupUnlessProperty;
+import io.smallrye.mutiny.Uni;
+
 @ApplicationScoped
-public class InMemTracking {
+@LookupUnlessProperty(name = "tracking.db", stringValue = "true")
+public class InMemTracking implements TrackingService {
 
     private TreeMap<Long, Boolean> missing = new TreeMap<>();
     private Long last = 1L;
     private Long duplicateCount = 0L;
 
-    public void track(Long key) {
+    public void store(Long key) {
         // key can be `null` if the incoming record has no key
 
         // reset message
@@ -23,7 +29,7 @@ public class InMemTracking {
 
         // if there is a jump, prepare a missing list
         // e.g. key = 13 and last = 10, missing = [ {11, false}, {12, false} ]
-        for (long i = last+1; i < key; i++) {
+        for (long i = last + 1; i < key; i++) {
             missing.put(i, false);
         }
 
@@ -32,13 +38,24 @@ public class InMemTracking {
             duplicateCount++;
 
         // last is current
-        if (key >= last) last=key;
+        if (key >= last)
+            last = key;
 
         // in case it was missing, remove from missing list
         missing.remove(key);
 
-        System.out.println(String.format("Current Key: %d, Missing messages: %d, Duplicated msg: %d", key, missing.size(),
-                duplicateCount));
+        System.out
+                .println(String.format("Current Key: %d, Missing messages: %d, Duplicated msg: %d", key, missing.size(),
+                        duplicateCount));
+    }
 
+    @Override
+    public Uni<Void> track(ConsumerRecord<Long, String> record) {
+        return Uni
+                .createFrom().item(record)
+                .invoke(r -> {
+                    store(r.key());
+                })
+                .replaceWithVoid();
     }
 }

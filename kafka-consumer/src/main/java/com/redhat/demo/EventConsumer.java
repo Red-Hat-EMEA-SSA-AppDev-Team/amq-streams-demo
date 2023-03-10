@@ -1,10 +1,10 @@
 package com.redhat.demo;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import io.smallrye.mutiny.Uni;
@@ -14,14 +14,8 @@ public class EventConsumer {
 
     private boolean failure;
 
-    @ConfigProperty(name = "consumer.kind", defaultValue = "in-mem")
-    private String kind;
-
     @Inject
-    InMemTracking inMemTracking;
-
-    @Inject
-    DBTracking dbTracking;
+    Instance<TrackingService> tracking;
 
     public boolean isFailure() {
         return failure;
@@ -34,22 +28,14 @@ public class EventConsumer {
     @Incoming("event")
     public Uni<Void> consume(ConsumerRecord<Long, String> record) {
 
-        Uni<Void> result = null;
-
-        if ("in-mem".equalsIgnoreCase(kind)) {
-            result = Uni.createFrom().item(record).invoke(r -> {
-                inMemTracking.track(r.key());
-            }).replaceWithVoid();
-        } else {
-            result = dbTracking.persist(record);
-        }
+        Uni<Void> result = tracking.get().track(record);
 
         if (isFailure()) {
             setFailure(false);
             throw new RuntimeException();
         }
+
         return result;
     }
-
 
 }
