@@ -5,10 +5,8 @@ ADD --chown=1001 app-src .
 USER 1001
 
 # Install the dependencies
-# RUN pip install -U "pip>=19.3.1" && \
-#    pip install -r requirements.txt && \
-#    python manage.py collectstatic --noinput && \
-#    python manage.py migrate
+RUN pip install -U "pip>=19.3.1" && \
+    pip install -r requirements.txt
 
 # Run the application
 CMD python app.py

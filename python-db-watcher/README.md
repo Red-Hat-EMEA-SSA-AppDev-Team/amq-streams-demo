@@ -1,5 +1,13 @@
 # Python App
 
+## Create virtual environment
+
+```sh
+python3 -m venv .env
+source .env/bin/activate.fish
+pip install -r app-src/requirements.txt 
+```
+
 ## Local run
 
 ```sh
