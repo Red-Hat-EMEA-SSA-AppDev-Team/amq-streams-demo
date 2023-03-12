@@ -34,7 +34,7 @@ build and launch:
 ```sh
 oc new-build --strategy docker --binary --name=db-watcher
 oc start-build db-watcher --from-dir . --follow
-oc new-app db-watcher
+oc new-app -e POSTGRES_SVC=event-db db-watcher
 ```
 
 remove all:

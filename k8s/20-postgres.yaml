@@ -1,0 +1,93 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: event-db
+    application: kafka-consumer-service
+    system: kafka-demo
+  name: event-db-config
+data:
+  POSTGRESQL_DATABASE: cXVhcmt1cw==
+  POSTGRESQL_PASSWORD: cXVhcmt1cw==
+  POSTGRESQL_USERNAME: cXVhcmt1cw==
+type: Opaque
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: event-db
+    application: kafka-consumer-service
+    system: kafka-demo
+    app.kubernetes.io/part-of: kafka-consumer-service
+    app.openshift.io/runtime: postgresql
+  name: event-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: event-db
+  template:
+    metadata:
+      labels:
+        name: event-db
+        application: kafka-consumer-service
+        system: kafka-demo
+    spec:
+      containers:
+        - envFrom:
+            - secretRef:
+                name: event-db-config
+          image: bitnami/postgresql:14
+          name: event-db
+          ports:
+            - containerPort: 5432
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              memory: 32Mi
+          volumeMounts:
+            - mountPath: /bitnami/postgresql
+              name: event-db-data
+            - mountPath: /docker-entrypoint-initdb.d
+              name: event-db-init-data
+      ### DB Init script
+      # initContainers:
+      #   - command:
+      #       - sh
+      #       - get-data.sh
+      #     image: registry.access.redhat.com/ubi8-minimal:8.6
+      #     name: get-data
+      #     volumeMounts:
+      #       - mountPath: /docker-entrypoint-preinitdb.d
+      #         name: event-db-init
+      #       - mountPath: /docker-entrypoint-initdb.d
+      #         name: event-db-init-data
+      #     workingDir: /docker-entrypoint-preinitdb.d
+      volumes:
+        - emptyDir: {}
+          name: event-db-data
+        - emptyDir: {}
+          name: event-db-init-data
+        # - configMap:
+        #     name: event-db-init
+        #   name: event-db-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: event-db
+    application: kafka-consumer-service
+    system: kafka-demo
+  name: event-db
+spec:
+  ports:
+    - port: 5432
+      protocol: TCP
+      targetPort: 5432
+  selector:
+    name: event-db
+  type: ClusterIP
