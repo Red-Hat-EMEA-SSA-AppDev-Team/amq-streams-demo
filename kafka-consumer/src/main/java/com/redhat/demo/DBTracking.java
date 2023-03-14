@@ -3,6 +3,7 @@ package com.redhat.demo;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.control.ActivateRequestContext;
 import javax.inject.Inject;
+import javax.persistence.PersistenceException;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -23,7 +24,7 @@ public class DBTracking implements TrackingService {
     @Override
     @ActivateRequestContext
     public Uni<Void> track(ConsumerRecord<Long, String> record) {
-        System.out.println("DBTracking.track() - key: "+record.key());
+        System.out.println("DBTracking.track() - key: " + record.key());
         return session
                 .withTransaction(t -> {
                     KafkaState state = new KafkaState();
@@ -33,19 +34,21 @@ public class DBTracking implements TrackingService {
 
                     return state.persist();
                 })
-                .onFailure().recoverWithNull()
                 .chain(t -> {
-                    if (t != null) {
-                        Event event = new Event();
-                        event.key = record.key();
-                        event.message = record.value();
+                    Event event = new Event();
+                    event.key = record.key();
+                    event.message = record.value();
 
-                        return event.persistAndFlush().replaceWithVoid();
-                    } else {
-                        System.out.println(">>> state insert failute");
-                        return Uni.createFrom().nullItem();
-                    }
+                    return event.persistAndFlush().replaceWithVoid();
                 })
+                .onFailure(PersistenceException.class).transform(m -> {
+                    System.err.println(">>> " + m);
+                    if (m.getMessage().contains("duplicate"))
+                        return m;
+                    else
+                        return m.getCause();
+                })
+                .onFailure(PersistenceException.class).recoverWithNull()
                 .onTermination().call(() -> session.close());
     }
 }
