@@ -86,6 +86,8 @@ Further information about the applications:
 
 == Demo routines
 
+=== AMQ Streams High Availability
+
 . Show consumer logs
 +
 [source,shell]
@@ -114,6 +116,8 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
 . Show again the topic distribution on the cluster members
 
 . Show the dashboard
+
+=== AMQ Streams Rebalancing
 
 . Add the cruise control
 +
@@ -203,6 +207,60 @@ oc describe kafkarebalance my-rebalance
 oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
             --bootstrap-server my-cluster-kafka-bootstrap:9092 \
             --describe --topic event
+----
+
+=== Persist Consumed Messages
+
+In this section, the consumer is enhanced to store the messages in a Postgres DB.
+The goal is to show the client scalability and resiliance
+
+. Deploy the database (basic ephemaral deployment)
++
+[source,shell]
+----
+oc apply -f k8s/20-postgres.yaml
+----
+
+. Edit the consumer configuration to enable persistence:
++
+[source,shell]
+----
+oc edit configmap/kafka-consumer-config
+----
++
+Change this environment variable: `TRACKING_DB: "true"`
+
+. Reset the producer and the consumer
++
+[source,shell]
+----
+oc scale deployment kafka-producer --replicas=0
+oc scale deployment kafka-consumer --replicas=0
+oc scale deployment kafka-consumer --replicas=1
+oc scale deployment kafka-producer --replicas=1
+----
+
+. Deploy a simple Python application to poll the DB and detect duplicate or missing messages
++
+[source,shell]
+----
+oc new-build --strategy docker --binary --name=db-watcher
+oc start-build db-watcher --from-dir python-db-watcher/ --follow
+oc new-app -e POSTGRES_SVC=event-db db-watcher
+----
+
+. Open the db-watcher logs
++
+[source,shell]
+----
+oc logs --tail 10 -f --selector="deployment=db-watcher"
+----
+
+. Scale up the consumer
++
+[source,shell]
+----
+oc scale deployment kafka-consumer --replicas=2
 ----
 
 == Clean up
