@@ -111,7 +111,9 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
                                 --describe --topic event
 ----
 
-. Kill one of the broker
+. Test the Kafka's resiliance and consistency by brutely shutting down one of brokers' pod.
++
+TIP: Use the following command: `oc delete --force pod <pod-name>`
 
 . Show again the topic distribution on the cluster members
 
@@ -214,6 +216,22 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
 In this section, the consumer is enhanced to store the messages in a Postgres DB.
 The goal is to show the client scalability and resiliance
 
+. Stop the consumer and producer and restore the normal producer behavior
++
+[source,shell]
+----
+oc scale deployment kafka-consumer --replicas=0
+oc scale deployment kafka-producer --replicas=0
+oc edit configmap kafka-producer-config
+----
++
+update the evironment variable to its original value
++
+[source,shell]
+----
+  PRODUCER_PARTED: "false"
+----
+
 . Deploy the database (basic ephemaral deployment)
 +
 [source,shell]
@@ -234,8 +252,6 @@ Change this environment variable: `TRACKING_DB: "true"`
 +
 [source,shell]
 ----
-oc scale deployment kafka-producer --replicas=0
-oc scale deployment kafka-consumer --replicas=0
 oc scale deployment kafka-consumer --replicas=1
 oc scale deployment kafka-producer --replicas=1
 ----
@@ -255,6 +271,8 @@ oc new-app -e POSTGRES_SVC=event-db db-watcher
 ----
 oc logs --tail 10 -f --selector="deployment=db-watcher"
 ----
++
+NOTE: At this point, there should be no missing or duplicate messages, so the log should be empty.
 
 . Scale up the consumer
 +
@@ -262,10 +280,16 @@ oc logs --tail 10 -f --selector="deployment=db-watcher"
 ----
 oc scale deployment kafka-consumer --replicas=2
 ----
++
+NOTE: When the new consumer pod become active, the other consumer gives up half of his partitions to the new one. For a while you should spot some missing messages in `db-watcher` log. However, it's a transient condition.
+
+. Test the consumer's resiliance and consistency by brutely shutting down one of the two pods.
++
+TIP: Use the following command: `oc delete --force pod <pod-name>`
 
 == Clean up
 
-Delete only the kafka broker and the topics:
+In order to start the demo from scratch, with minimal effort: delete only the kafka broker and the topics:
 
 [source,shell]
 ----
@@ -279,3 +303,5 @@ Drop the PVC:
 ----
 oc delete pvc --selector="strimzi.io/cluster=my-cluster"
 ----
+
+Then, you can apply again the first two yaml files.
