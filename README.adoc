@@ -305,3 +305,12 @@ oc delete pvc --selector="strimzi.io/cluster=my-cluster"
 ----
 
 Then, you can apply again the first two yaml files.
+
+=== Database clean up
+
+[source,shell]
+----
+oc rsh event-db-<id>
+$ psql -U quarkus quarkus
+quarkus=> delete from event;
+----
