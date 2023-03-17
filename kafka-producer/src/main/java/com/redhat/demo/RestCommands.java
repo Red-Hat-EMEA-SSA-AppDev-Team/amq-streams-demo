@@ -1,5 +1,6 @@
 package com.redhat.demo;
 
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -7,10 +8,10 @@ import javax.ws.rs.Path;
 @Path("/")
 public class RestCommands {
     @Inject
-    KafkaProducer kafkaProducer;
+    Instance<RecordGenerator> instanceGen;
 
     @PUT
     public void setFailure() {
-        kafkaProducer.setFailure(true);
+        instanceGen.get().setFailure(true);
     }
 }
