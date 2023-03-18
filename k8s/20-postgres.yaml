@@ -20,7 +20,7 @@ metadata:
     app: event-db
     application: kafka-consumer-service
     system: kafka-demo
-    app.kubernetes.io/part-of: kafka-consumer-service
+    app.kubernetes.io/part-of: event-application
     app.openshift.io/runtime: postgresql
   name: event-db
 spec:

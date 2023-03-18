@@ -263,7 +263,7 @@ oc scale deployment kafka-producer --replicas=1
 ----
 oc new-build --strategy docker --binary --name=db-watcher
 oc start-build db-watcher --from-dir python-db-watcher/ --follow
-oc new-app -e POSTGRES_SVC=event-db db-watcher
+oc new-app -l app.kubernetes.io/part-of=event-application -e POSTGRES_SVC=event-db db-watcher
 ----
 
 . Open the db-watcher logs
