@@ -34,10 +34,16 @@ spec:
       hostPort: 5432
     stdin: true
     tty: true
-#    volumeMounts:
+    volumeMounts:
+      - name: event-db-init-data
+        mountPath: /docker-entrypoint-initdb.d/import.sql:Z
 #    - mountPath: /var/lib/postgresql/data
 #      name: 31d7943f155054f8d1980683c0aa9f118f666e5ea3b662d328def501c0ab92a9-pvc
-#  volumes:
+  volumes:
+    - name: event-db-init-data
+      hostPath:
+        type: File
+        path: ./kafka-producer/src/main/resources/import.sql
 #  - name: 31d7943f155054f8d1980683c0aa9f118f666e5ea3b662d328def501c0ab92a9-pvc
 #    persistentVolumeClaim:
 #      claimName: 31d7943f155054f8d1980683c0aa9f118f666e5ea3b662d328def501c0ab92a9

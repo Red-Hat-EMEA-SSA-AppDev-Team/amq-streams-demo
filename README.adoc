@@ -236,6 +236,7 @@ update the evironment variable to its original value
 +
 [source,shell]
 ----
+oc create configmap event-db-init-data --from-file=./kafka-producer/src/main/resources/import.sql
 oc apply -f k8s/20-postgres.yaml
 ----
 
@@ -312,5 +313,6 @@ Then, you can apply again the first two yaml files.
 ----
 oc rsh event-db-<id>
 $ psql -U quarkus quarkus
-quarkus=> delete from event;
+quarkus=> DELETE FROM event;
+quarkus=> ALTER SEQUENCE event_seq RESTART WITH 1;
 ----
