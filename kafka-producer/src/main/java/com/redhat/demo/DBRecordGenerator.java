@@ -4,9 +4,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.temporal.ChronoUnit;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+
+import org.eclipse.microprofile.faulttolerance.Retry;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.arc.lookup.LookupIfProperty;
@@ -32,16 +35,18 @@ public class DBRecordGenerator implements RecordGenerator {
 
     private void failureSimulation() {
         if (getFailure()) {
+            setFailure(false);
             throw new RuntimeException();
         }
     }
 
     @Blocking
+    @Retry(maxRetries = 2, delay = 1, delayUnit = ChronoUnit.SECONDS)
     @Override
-    public KafkaRecord<Long,String> createRecord(Long tick) {
+    public KafkaRecord<Long, String> createRecord(Long tick) {
         Long lastKey = 0L;
 
-        try (Connection connection = dataSource.getConnection()){
+        try (Connection connection = dataSource.getConnection()) {
 
             PreparedStatement stmt = connection.prepareStatement("SELECT NEXTVAL('event_seq')");
             stmt.execute();
@@ -51,7 +56,9 @@ public class DBRecordGenerator implements RecordGenerator {
             resultSet.close();
             stmt.close();
 
-            return KafkaRecord.of(lastKey, "demo message "+lastKey);
+            failureSimulation();
+
+            return KafkaRecord.of(lastKey, "demo message " + lastKey);
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
