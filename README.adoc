@@ -80,9 +80,9 @@ mvn -f kafka-producer/pom.xml package -Dquarkus.kubernetes.deploy=true -DskipTes
 
 Further information about the applications:
 
-* file:///kafka-consumer/README.md[Consumer App Readme]
+* xref:kafka-consumer/README.md[Consumer App Readme]
 
-* file:///kafka-producer/README.md[Producer App Readme]
+* xref:kafka-producer/README.md[Producer App Readme]
 
 == Demo routines
 
