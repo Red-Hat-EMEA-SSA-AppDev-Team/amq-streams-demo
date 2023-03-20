@@ -43,28 +43,26 @@ where c > 1
 
 ## Running the application in dev mode
 
-You can run your application in dev mode that enables live coding using:
-```shell script
-./mvnw compile quarkus:dev
-```
+### Supporting services
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
+Kafka consumer application requires the following supporting services:
 
-### Disable DevServices
+- Kafka broker
+- PostgreSQL (it's only required if you choose to enable the event persistence)
 
-This application requires a Kafka broker up and running to work properly.
-By default, quarkus dev mode initialize the kafka services, but you can override this behavior:
+Quarkus can start those services leveraging the [Dev Services](https://quarkus.io/guides/dev-services).
+However, in order to test the application failure without dropping the the backend services, it's better to start these services outside of Quarkus.
 
-1. Disable dev services in `application.properties`:
+1. Dev services should be already disabled in `application.properties`:
 
    ```
    quarkus.devservices.enabled=false
    ```
 
-2. Start the backend services via `podman kube play`
+2. Start the backend services via `podman kube play` from the project root (containing this quarkus project).
 
    ```sh
-   podman kube play src/main/kubernetes/dev-services.yaml
+   podman kube play kafka-consumer/src/main/kubernetes/dev-services.yaml
    ```
 
 Alternatively you can start containers with multiple commands:
@@ -78,8 +76,17 @@ Alternatively you can start containers with multiple commands:
 2. Start postgres:
 
    ```sh
-   podman run --rm -it -p 5432:5432 -e POSTGRES_USER=quarkus -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=quarkus docker.io/library/postgres:14
+   podman run --rm -it -p 5432:5432 -e POSTGRES_USER=quarkus -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=quarkus -v ./kafka-producer/src/main/resources/import.sql:/docker-entrypoint-initdb.d/import.sql:Z docker.io/library/postgres:14
    ```
+
+### Run it
+
+You can run your application in dev mode that enables live coding using:
+```shell script
+./mvnw compile quarkus:dev
+```
+
+> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
 
 ## Packaging and running the application
 
