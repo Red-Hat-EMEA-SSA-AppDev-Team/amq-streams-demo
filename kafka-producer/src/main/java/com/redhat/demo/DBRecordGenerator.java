@@ -18,27 +18,10 @@ import io.smallrye.reactive.messaging.kafka.KafkaRecord;
 
 @ApplicationScoped
 @LookupIfProperty(name = "sequence.db", stringValue = "true")
-public class DBRecordGenerator implements RecordGenerator {
+public class DBRecordGenerator extends AbstractRecordGenerator {
 
     @Inject
     AgroalDataSource dataSource;
-    private boolean failure;
-
-    public boolean getFailure() {
-        return failure;
-    }
-
-    @Override
-    public void setFailure(boolean failure) {
-        this.failure = failure;
-    }
-
-    private void failureSimulation() {
-        if (getFailure()) {
-            setFailure(false);
-            throw new RuntimeException();
-        }
-    }
 
     @Blocking
     @Retry(maxRetries = 2, delay = 1, delayUnit = ChronoUnit.SECONDS)

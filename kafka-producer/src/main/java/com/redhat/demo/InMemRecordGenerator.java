@@ -1,5 +1,6 @@
 package com.redhat.demo;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -7,13 +8,14 @@ import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.faulttolerance.Retry;
 
 import io.quarkus.arc.lookup.LookupUnlessProperty;
 import io.smallrye.reactive.messaging.kafka.KafkaRecord;
 
 @ApplicationScoped
 @LookupUnlessProperty(name = "sequence.db", stringValue = "true")
-public class InMemRecordGenerator implements RecordGenerator {
+public class InMemRecordGenerator extends AbstractRecordGenerator {
 
     private static Long lastKey = 0L;
 
@@ -23,25 +25,8 @@ public class InMemRecordGenerator implements RecordGenerator {
     @ConfigProperty(name = "producer.parted", defaultValue = "false")
     private Boolean parted;
 
-    private Boolean failure = false;
-
     List<Integer> partitionList = null;
     
-    public Boolean getFailure() {
-        return failure;
-    }
-
-    @Override
-    public void setFailure(boolean failure) {
-        this.failure = failure;
-    }
-
-    private void failureSimulation() {
-        if (getFailure()) {
-            throw new RuntimeException();
-        }
-    }
-
     public List<Integer> getPartitionList() {
         if (partitionList == null) {
             if (parted && partitions != null && partitions.length() > 0 )
@@ -50,6 +35,7 @@ public class InMemRecordGenerator implements RecordGenerator {
         return partitionList;
     }
 
+    @Retry(maxRetries = 2, delay = 1, delayUnit = ChronoUnit.SECONDS)
     @Override
     public KafkaRecord<Long, String> createRecord(Long tick) {
         // workaround to avoid other events to surpass the first
