@@ -22,19 +22,19 @@ public class InMemTracking implements TrackingService {
 
         // reset message
         if (key == 1) {
-            last = 1L;
+            last = 0L;
             duplicateCount = 0L;
             missing.clear();
         }
 
         // if there is a jump, prepare a missing list
         // e.g. key = 13 and last = 10, missing = [ {11, false}, {12, false} ]
-        for (long i = last + 1; i < key; i++) {
+        for (long i = last+1; i < key; i++) {
             missing.put(i, false);
         }
 
-        // if the key is lower than the last one and not missing, then it's a duplicate
-        if (key < last && !missing.containsKey(key))
+        // if the key is <= last one and not missing, then it's a duplicate
+        if (key <= last && !missing.containsKey(key))
             duplicateCount++;
 
         // last is current
