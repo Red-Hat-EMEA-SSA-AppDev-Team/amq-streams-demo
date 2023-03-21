@@ -114,6 +114,8 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
 . Test the Kafka's resiliance and consistency by brutely shutting down one of brokers' pod.
 +
 TIP: Use the following command: `oc delete --force pod <pod-name>`
++
+IMPORTANT: Watching at the consumer log you should notice that it temporarily stops processing some messages (missing messages). This is expected! In fact, Kafka promotes consistency over availability, so until a new partition leader is elected you cannot write or consume messages on that partition. Eventually, the new leader will become available and the missing messages will be caught up.
 
 . Show again the topic distribution on the cluster members
 
@@ -287,6 +289,52 @@ NOTE: When the new consumer pod become active, the other consumer gives up half 
 . Test the consumer's resiliance and consistency by brutely shutting down one of the two pods.
 +
 TIP: Use the following command: `oc delete --force pod <pod-name>`
+
+=== Probing the producer
+
+Up to now, the producer has been using an in-memory counter to generate an ordered sequence of messages.
+
+By changing the producer configuration, it's possible to leverage a PostgresSQL sequence to maintain a shared counter. As a result, it's possible to scale up the producer and probe the producer failover.
+
+. Open the producer configuration and set `SEQUENCE_DB`to `true`
++
+[source,shell]
+----
+oc edit configmap kafka-producer-config
+----
+
+. Restart the producer scaling it down and up to 2 instance:
++
+[source,shell]
+----
+oc scale deployment kafka-producer --replicas=0
+oc scale deployment kafka-producer --replicas=2
+----
+
+. After a few seconds you can start dropping the producer pods: 
++
+[source,shell]
+----
+oc delete --force pod kafka-producer-<id> 
+----
+
+. Analyzing the db-watcher log, you are unlikely to find a missing message, because you should stop the producer at the exact moment when it gets the sequence number from the DB and before it sends it to Kafka. For educational purposes, the producer exposes an endpoint which throw a runtime exception at exactly that point:
+
+* Open a shell into one of the producer pod:
++
+[source,shell]
+----
+oc rsh kafka-producer-5d8856fb9f-cmt7r
+----
+
+* Inject and HTTP PUT request on the local endpoint:
++
+[source,shell]
+----
+$ curl -X PUT localhost:8080
+----
+
+. Now, looking at the db-watcher log you should see a missing message.
 
 == Clean up
 
