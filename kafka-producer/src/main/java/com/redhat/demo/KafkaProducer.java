@@ -23,6 +23,11 @@ public class KafkaProducer {
 
     @Outgoing("event-out")
     public Multi<KafkaRecord<Long, String>> generate() {
-        return Multi.createFrom().ticks().every(Duration.ofMillis(tickFrequency)).map(generator.get()::createRecord);
+        return Multi.createFrom().ticks().every(Duration.ofMillis(tickFrequency))
+                .onOverflow().buffer(1000)
+                .onOverflow()
+                    .invoke(tick -> System.out.println("buffer overflow tick: " + tick))
+                    .drop()
+                .map(generator.get()::createRecord);
     }
 }
