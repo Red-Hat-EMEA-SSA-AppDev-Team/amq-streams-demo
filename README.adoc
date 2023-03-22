@@ -123,7 +123,7 @@ IMPORTANT: Watching at the consumer log you should notice that it temporarily st
 
 === AMQ Streams Rebalancing
 
-. Add the cruise control
+. Add the Cruise Control
 +
 [source,shell]
 ----
@@ -169,42 +169,45 @@ oc scale deployment/kafka-producer --replicas=1
 oc exec -it my-cluster-kafka-0 -- bin/kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list localhost:9092 --topic event
 ----
 
-. Trigger the rebalance analysis:
+. Deploy the rebalance configuration which will trigger the optimization analysis:
 +
 [source,shell]
 ----
-oc apply -f k8s/09-kafka-rebalance-full.yaml
+oc apply -f k8s/10-kafka-rebalance-full.yaml
 ----
 
 . Review the optimization proposal:
 +
 [source,shell]
 ----
-oc describe kafkarebalance my-rebalance
+oc describe kafkarebalance full-rebalance
 ----
 
 . Approve the proposal
 +
 [source,shell]
 ----
-oc annotate kafkarebalances.kafka.strimzi.io my-rebalance strimzi.io/rebalance=approve
+oc annotate kafkarebalances.kafka.strimzi.io full-rebalance strimzi.io/rebalance=approve
 ----
 +
-later on you can refresh the analysis:
-+
+[TIP]
+==== 
+It's possible to trigger a new analysis on the existing rebalancing configuration:
+
 [source,shell]
 ----
-oc annotate kafkarebalances.kafka.strimzi.io my-rebalance strimzi.io/rebalance=refresh
+oc annotate kafkarebalances.kafka.strimzi.io full-rebalance strimzi.io/rebalance=refresh
 ----
+====
 
 . Rebalancing takes some time, run again the following command and wait for `Status: True`
 +
 [source,shell]
 ----
-oc describe kafkarebalance my-rebalance
+oc describe kafkarebalance full-rebalance
 ----
 
-. Run again the decribe topic command, you should spot the overloaded partitions moved on different leaders:
+. Run again the describe topic command, you should spot the overloaded partitions moved on different leaders:
 +
 [source,shell]
 ----
@@ -212,6 +215,67 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
             --bootstrap-server my-cluster-kafka-bootstrap:9092 \
             --describe --topic event
 ----
+
+When the Kafka cluster scales, existing topics do not leverage the newly available brokers, so they remain idle until new topics are created.
+The Cruise Control can be used to evenly distribute existing topics on the new available resources, as the following steps will show:
+
+. Increase the Kafka replicas:
++
+[source,shell]
+----
+oc patch kafka my-cluster --patch '{"spec":{"kafka": {"replicas": 4}}}' --type=merge
+----
+
+. Change the producer configurations to create an evenly distributed workload:
++
+[source,shell]
+----
+oc edit configmap/kafka-producer-config
+----
++
+Modify the environment variables:
++
+[source,shell]
+----
+  PRODUCER_PARTED: "false"
+  PRODUCER_TICK_FREQUENCY: "10"
+----
+
+. Restart the producer and consumer application
+
+. Open the Grafana dashboard, after a few minutes, the CPU graph should look like the following:
++
+image:docs/images/graphana-cpu-unbalaced.png[Kafka CPU]
++
+The new broker uses less resources.
+
+. Watching at the topic information confirms that all partitions are on the first 3 brokers (0,1,2)
++
+[source,shell]
+----
+oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
+            --bootstrap-server my-cluster-kafka-bootstrap:9092 \
+            --describe --topic event
+----
+
+. Deploy the rebalance configuration `mode: add-brokers`, which is tailored to leverage the new available brokers:
++
+[source,shell]
+----
+oc apply -f k8s/11-kafka-rebalance-add-brokers.yaml
+----
+
+. Review and approve the optimization proposal:
++
+[source,shell]
+----
+oc describe kafkarebalance full-rebalance
+oc annotate kafkarebalances.kafka.strimzi.io full-rebalance strimzi.io/rebalance=approve
+----
+
+. Rebalancing takes a couple of minutes, you can monitor the Grafana dashboard to see the changes and the topic information to understand how the partitions and their replicas are reorganized across the brokers.
+
+. Finally, you can ask the Cruise Control to shrink your partitions on less brokers and then scale the cluster down.
 
 === Persist Consumed Messages
 
