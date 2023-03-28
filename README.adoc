@@ -104,7 +104,7 @@ oc logs --tail=20 -f --selector="app.kubernetes.io/name=kafka-consumer"
 oc logs --tail=20 -f --selector="app.kubernetes.io/name=kafka-producer"
 ----
 
-. Show the topic distribution
+. Show the partitions distribution
 +
 [source,shell]
 ----
@@ -113,7 +113,7 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
                                 --describe --topic event
 ----
 
-. Test the Kafka's resiliance and consistency by brutely shutting down one of brokers' pod.
+. Test the Kafka's resilience and consistency by forcefully shutting down one of brokers' pod.
 +
 TIP: Use the following command: `oc delete --force pod <pod-name>`
 +
