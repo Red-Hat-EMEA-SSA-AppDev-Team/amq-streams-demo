@@ -6,6 +6,8 @@ One of the key feature of *Red Hat® AMQ Streams* is bringing the power of *Apac
 
 == Create Kafka broker and topic
 
+Add **AMQ Streams** operator to your OpenShift environment.
+
 Create a Broker with metrics enabled:
 
 - consumer lag
