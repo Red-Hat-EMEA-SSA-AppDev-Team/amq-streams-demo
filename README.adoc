@@ -402,6 +402,87 @@ $ curl -X PUT localhost:8080
 
 . Now, looking at the db-watcher log you should see a missing message.
 
+=== Accessing Kafka outside of the OpenShift cluster
+
+Those connection `type` exposes Kafka in the external listener configuration:
+
+- `nodeport` uses a NodePort type Service
+- `loadbalancer` uses a Loadbalancer type Service
+- `ingress` uses Kubernetes Ingress and the Ingress NGINX Controller for Kubernetes
+- `route` uses OpenShift Routes and the HAProxy router (the simplest method albeit not the most efficient)
+
+Here we'll use `route` and `scram-sha-512` for authentication:
+
+. Add external listener by adding this section to the existing Kafka resource:
++
+[source,yaml]
+----
+    - name: external
+      tls: true
+      type: route      
+      port: 9094
+      authentication:
+        type: scram-sha-512
+----
++
+Otherwise patch it with the following command:
++
+[source,shell]
+----
+oc patch kafka my-cluster --patch '{"spec":{"kafka": { listeners: [{"authentication":{"type":"scram-sha-512"},"name":"external","port":9094,"tls":true,"type":"route"} ] } }}' --type=merge
+----
+
+. Define a new user:
++
+[source,shell]
+----
+oc apply -f k8s/30-user.yaml
+----
+
+. The client must trust the Kafka CA certificate to establish the encrypted connection. The following command **extract** the CA certificate and **create a truststore** for the Java clients:  
++
+[source,shell]
+----
+oc get kafka my-cluster -o=jsonpath='{.status.listeners[?(@.name=="external")].certificates[0]}{"\n"}' > kafka-cluster-ca.crt
+keytool -import -trustcacerts -alias root -file kafka-cluster-ca.crt -keystore truststore.jks -storepass password -noprompt
+----
+
+. Configure the kafka consumer to run from your local environment and connect to the Kafka cluster on OpenShift:
++
+[source,shell]
+----
+echo -e "\n\n## Kafka remote config
+kafka.ssl.truststore.location = ../truststore.jks
+kafka.ssl.truststore.password = password
+kafka.security.protocol=SASL_SSL
+kafka.sasl.mechanism=SCRAM-SHA-512" >> kafka-consumer/src/main/resources/application.properties
+echo "kafka.sasl.jaas.config=$(oc get secret my-user -o jsonpath='{.data.sasl\.jaas\.config}' | base64 -d)" >> kafka-consumer/src/main/resources/application.properties
+oc get kafka my-cluster -o jsonpath='{"\nkafka.bootstrap.servers="}{.status.listeners[?(@.name=="external")].bootstrapServers}{"\n"}' >> kafka-consumer/src/main/resources/application.properties
+----
+
+. Start locally the kafka consumer:
++
+[source,shell]
+----
+mvn -f kafka-consumer/pom.xml package quarkus:dev
+----
++
+[TIP]
+====
+Alternatively, you can use the console consumer shipped by the Kafka project.
+
+Use the previous step command to create the `client.config` file (drop `kafka.` prefix). 
+Then issue the following command:
+
+[source,shell]
+----
+bin/kafka-console-consumer.sh \
+--bootstrap-servers (oc get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="external")].bootstrapServers}')
+--topic event \
+--consumer.config client.config
+----
+====
+
 == Clean up
 
 In order to start the demo from scratch, with minimal effort: delete only the kafka broker and the topics:
