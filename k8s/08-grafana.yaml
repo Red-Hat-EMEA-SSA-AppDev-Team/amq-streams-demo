@@ -4,6 +4,7 @@ metadata:
   name: grafana
   labels:
     app: strimzi
+    application: kafka-monitor
 spec:
   replicas: 1
   selector:
@@ -17,7 +18,14 @@ spec:
       serviceAccountName: grafana-serviceaccount
       containers:
       - name: grafana
-        image: grafana/grafana:7.5.15
+        image: grafana/grafana:9.3.1
+        securityContext:
+          capabilities:
+            drop: ["ALL"]
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: "RuntimeDefault"
         ports:
         - name: grafana
           containerPort: 3000
@@ -58,6 +66,7 @@ metadata:
   name: grafana
   labels:
     app: strimzi
+    application: kafka-monitor
 spec:
   ports:
   - name: grafana
