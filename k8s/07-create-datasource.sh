@@ -1,5 +1,5 @@
 #!/bin/bash
-export GRAFANA_ACCESS_TOKEN=`oc create token grafana-serviceaccount`
+export GRAFANA_ACCESS_TOKEN=`oc create token grafana-serviceaccount --duration 10000m`
 
 echo "apiVersion: 1
 datasources:
