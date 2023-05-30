@@ -429,7 +429,7 @@ Otherwise patch it with the following command:
 +
 [source,shell]
 ----
-oc patch kafka my-cluster --patch '{"spec":{"kafka": { listeners: [{"authentication":{"type":"scram-sha-512"},"name":"external","port":9094,"tls":true,"type":"route"} ] } }}' --type=merge
+oc patch kafka my-cluster --patch '{"spec":{"kafka": { "listeners": [{"authentication":{"type":"scram-sha-512"},"name":"external","port":9094,"tls":true,"type":"route"} ] } }}' --type=merge
 ----
 
 . Define a new user:
