@@ -650,3 +650,24 @@ $ psql -U quarkus quarkus
 quarkus=> DELETE FROM event;
 quarkus=> ALTER SEQUENCE event_seq RESTART WITH 1;
 ----
+
+== Troubleshooting
+
+When on the client side you get an error id, e.g.:
+
+```
+2023-06-06 17:50:29,556 DEBUG Runtime failure during token validation (ErrId: 5cbf1e54)
+```
+
+You can search that id in the server log to gather further insights.
+
+To raise the log verbosity, use the following configuration:
+
+```yaml
+spec:
+  kafka:
+    logging:
+      type: inline
+      loggers:
+        log4j.logger.io.strimzi: "DEBUG"
+```
