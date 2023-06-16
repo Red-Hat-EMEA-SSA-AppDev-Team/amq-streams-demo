@@ -1,0 +1,200 @@
+{
+  "realm": "kafka",
+  "roles": {
+    "realm": [
+      {
+        "name": "topic-producer"
+      },
+      {
+        "name": "topic-consumer"
+      }
+    ],
+    "client": {
+      "kafka-authz": [
+        {
+          "name": "uma_protection",
+          "clientRole": true
+        }
+      ]
+    }
+  },
+  "clients": [
+    {
+      "clientId": "kafka-consumer",
+      "secret": "kafka-consumer-secret",
+      "clientAuthenticatorType": "client-secret",
+      "enabled": true,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "kafka-producer",
+      "secret": "kafka-producer-secret",
+      "clientAuthenticatorType": "client-secret",
+      "enabled": true,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "kafka-authz",
+      "secret": "kafka-authz-secret",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "publicClient": false,
+      "fullScopeAllowed": true,
+      "authorizationSettings": {
+        "allowRemoteResourceManagement": true,
+        "policyEnforcementMode": "ENFORCING",
+        "resources": [
+          {
+            "name": "Topic:event",
+            "ownerManagedAccess": false,
+            "attributes": {},
+            "uris": [],
+            "scopes": [
+              {
+                "name": "Describe"
+              },
+              {
+                "name": "Write"
+              },
+              {
+                "name": "Read"
+              },
+              {
+                "name": "IdempotentWrite"
+              }
+            ]
+          },
+          {
+            "name": "Topic:*",
+            "ownerManagedAccess": false,
+            "attributes": {},
+            "uris": [],
+            "scopes": [
+              {
+                "name": "Describe"
+              },
+              {
+                "name": "Write"
+              },
+              {
+                "name": "Read"
+              },
+              {
+                "name": "IdempotentWrite"
+              }
+            ]
+          },
+          {
+            "name": "Cluster:*",
+            "ownerManagedAccess": false,
+            "attributes": {},
+            "uris": [],
+            "scopes": [
+              {
+                "name": "IdempotentWrite"
+              }
+            ]
+          },
+          {
+            "name": "Group:*",
+            "ownerManagedAccess": false,
+            "attributes": {},
+            "uris": [],
+            "scopes": [
+              {
+                "name": "Describe"
+              },
+              {
+                "name": "Read"
+              }
+            ]
+          }
+        ],
+        "scopes": [
+          {
+            "name": "Read"
+          },
+          {
+            "name": "Write"
+          },
+          {
+            "name": "Describe"
+          },
+          {
+            "name": "IdempotentWrite"
+          },
+          {
+            "name": "Create"
+          },
+          {
+            "name": "Delete"
+          },
+          {
+            "name": "Alter"
+          },
+          {
+            "name": "ClusterAction"
+          },
+          {
+            "name": "DescribeConfigs"
+          },
+          {
+            "name": "AlterConfigs"
+          },
+          {
+            "name": "IdempotentWrite"
+          },
+          {
+            "name": "CreateTokens"
+          },
+          {
+            "name": "DescribeTokens"
+          },
+          {
+            "name": "All"
+          }
+        ],
+        "decisionStrategy": "AFFIRMATIVE"
+      }
+    }
+  ],
+  "users" : [
+    {
+      "username": "service-account-kafka-consumer",
+      "serviceAccountClientId": "kafka-consumer",
+      "realmRoles": [
+        "default-roles-kafka",
+        "topic-consumer"
+      ]
+    },
+    {
+      "username": "service-account-kafka-producer",
+      "serviceAccountClientId": "kafka-producer",
+      "realmRoles": [
+        "topic-producer",
+        "default-roles-kafka"
+      ]
+    }
+  ]
+}

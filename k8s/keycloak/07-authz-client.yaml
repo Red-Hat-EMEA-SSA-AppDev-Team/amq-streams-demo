@@ -1,0 +1,15 @@
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakClient
+metadata:
+  name: kc-authz
+  labels:
+    app: sso
+spec:
+  realmSelector:
+     matchLabels:
+      app: sso
+  client:
+    clientId: kafka-authz
+    secret: kafka-authz-secret
+    serviceAccountsEnabled: true
+    authorizationServicesEnabled: true

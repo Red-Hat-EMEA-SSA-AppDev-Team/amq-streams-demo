@@ -1,0 +1,26 @@
+# listener configuration
+spec:
+  kafka:
+    listeners:
+      - name: external
+        port: 9094
+        type: route
+        tls: true
+        authentication:
+          type: oauth 
+          validIssuerUri: https://${KEYCLOAK_ROUTE}/auth/realms/kafka
+          jwksEndpointUri: https://${KEYCLOAK_ROUTE}/auth/realms/kafka/protocol/openid-connect/certs
+          checkIssuer: true
+          checkAccessTokenType: true
+          accessTokenIsJwt: true
+          enableOauthBearer: true
+          maxSecondsWithoutReauthentication: 3600 
+          tlsTrustedCertificates: 
+          - secretName: oauth-server-cert
+            certificate: ca.crt
+          disableTlsHostnameVerification: true 
+# plain access for internal kafka clients
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false

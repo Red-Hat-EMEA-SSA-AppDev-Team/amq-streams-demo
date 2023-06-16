@@ -1,0 +1,7 @@
+  KAFKA_BOOTSTRAP_SERVERS: my-cluster-kafka-bootstrap.my-kafka.svc:9093
+  KAFKA_SSL_TRUSTSTORE_LOCATION: /truststores/truststore.jks
+  KAFKA_SSL_TRUSTSTORE_PASSWORD: password
+  KAFKA_SECURITY_PROTOCOL: SASL_SSL
+  KAFKA_SASL_MECHANISM: OAUTHBEARER
+  KAFKA_SASL_LOGIN_CALLBACK_HANDLER_CLASS: io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler
+  KAFKA_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required oauth.token.endpoint.uri=\"https://${KEYCLOAK_ROUTE}/auth/realms/kafka/protocol/openid-connect/token\" oauth.client.id=\"kafka-consumer\" oauth.client.secret=\"kafka-consumer-secret\" oauth.username.claim=\"preferred_name\" oauth.ssl.truststore.type=\"jks\" oauth.ssl.truststore.location=\"/truststores/oauth-ssl-truststore.jks\" oauth.ssl.truststore.password=\"password\";"

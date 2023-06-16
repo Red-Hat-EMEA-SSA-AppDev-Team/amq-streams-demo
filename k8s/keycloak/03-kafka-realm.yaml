@@ -1,0 +1,15 @@
+apiVersion: keycloak.org/v1alpha1
+kind: KeycloakRealm
+metadata:
+  name: kafka
+  labels:
+    app: sso
+spec:
+  realm:
+    id: "kafka"
+    realm: "kafka"
+    enabled: True
+    displayName: "Kafka Realm"
+  instanceSelector:
+    matchLabels:
+      app: sso

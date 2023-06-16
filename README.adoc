@@ -597,6 +597,10 @@ oc scale deployment/kafka-producer --replicas=1
 oc logs --tail=20 -f --selector="app.kubernetes.io/name=kafka-producer"
 ----
 
+== Further Configuration
+
+* xref:docs/keycloak-integration.adoc[Keycloak integration]
+
 == Clean up
 
 In order to start the demo from scratch, with minimal effort: delete only the kafka broker and the topics:
