@@ -414,7 +414,49 @@ Edit the Kafka listener section and add the following configuration:
 
 TIP: You can copy and paste from the `external` listener the authentication properties
 
-=== Add authentication configuration to the existing application deployment
+=== Add authentication to the application running on OpenShift
+
+Create a secret to hold the trust stores:
+
+[source,shell]
+----
+oc create secret generic kafka-client-truststores --from-file=truststore.jks --from-file=oauth-ssl-truststore.jks 
+----
+
+In order to update the OpenShift application deployment there are two options:
+
+. Update the image building process via quarkus-openshift extension
+. Update the existing deployment configurations
+
+==== Update the image building process
+
+Edit the _configmap_ in `kafka-consumer/src/main/kubernetes/openshift.yml` using the values from the following command:
+
+[source,shell]
+----
+cat k8s/keycloak/09-configmap.template | envsubst
+----
+
+WARNING: Make sure that the previous `KAFKA_BOOTSTRAP_SERVERS` value is replaced.
+
+Update `kafka-consumer/src/main/resources/application.properties`
+
+[source,props]
+----
+quarkus.openshift.mounts.trustores-vol.path=/truststores
+quarkus.openshift.secret-volumes.trustores-vol.secret-name=kafka-client-truststores
+----
+
+Finally, launch the image build:
+
+[source,shell]
+----
+mvn -f kafka-consumer/pom.xml package -Dquarkus.kubernetes.deploy=true -DskipTests
+----
+
+Repeat the above procedure for the _producer_ application, but replace the client id and secrets accordingly.
+
+==== Update the existing deployment configuration
 
 The below instructions assume that the client applications are correctly functioning without authentication.
 
@@ -432,19 +474,13 @@ Add configuration coming from following command:
 cat k8s/keycloak/09-configmap.template | envsubst
 ----
 
-Create a secret to hold the trust stores:
-
-[source,shell]
-----
-oc create secret generic kafka-client-truststores --from-file=truststore.jks --from-file=oauth-ssl-truststore.jks 
-----
-
 Update the Kafka consumer deployment to mount the secret containing the trust stores.
 
+TIP: the following command line leverages the popular `jq` command line utility (http://stedolan.github.io/jq/).
+
 [source,shell]
 ----
-oc get deployment kafka-consumer -o json | jq '.spec.template.spec += { "volumes": [ { "name": "truststores-vol", "secret": { "secretName": "kafka-client-truststores" } } ] }' | oc apply -f -
-oc get deployment kafka-consumer -o json | jq '.spec.template.spec.containers[] += { "volumeMounts": [ { "name": "truststores-vol", "mountPath": "/truststores", "readOnly": true } ] } ' | oc apply -f -
+oc get deployment kafka-consumer -o json | jq '.spec.template.spec += { "volumes": [ { "name": "truststores-vol", "secret": { "secretName": "kafka-client-truststores" } } ] }' | jq '.spec.template.spec.containers[] += { "volumeMounts": [ { "name": "truststores-vol", "mountPath": "/truststores", "readOnly": true } ] } ' | oc apply -f -
 ----
 
 Edit the producer _configmaps_ issuing the following command:
@@ -465,8 +501,7 @@ Update the Kafka producer deployment to mount the secret containing the trust st
 
 [source,shell]
 ----
-oc get deployment kafka-producer -o json | jq '.spec.template.spec += { "volumes": [ { "name": "truststores-vol", "secret": { "secretName": "kafka-client-truststores" } } ] }' | oc apply -f -
-oc get deployment kafka-producer -o json | jq '.spec.template.spec.containers[] += { "volumeMounts": [ { "name": "truststores-vol", "mountPath": "/truststores", "readOnly": true } ] } ' | oc apply -f -
+oc get deployment kafka-producer -o json | jq '.spec.template.spec += { "volumes": [ { "name": "truststores-vol", "secret": { "secretName": "kafka-client-truststores" } } ] }' | jq '.spec.template.spec.containers[] += { "volumeMounts": [ { "name": "truststores-vol", "mountPath": "/truststores", "readOnly": true } ] } ' | oc apply -f -
 ----
 
 == Related useful information
