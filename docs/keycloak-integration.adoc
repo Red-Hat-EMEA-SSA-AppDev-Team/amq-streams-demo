@@ -288,13 +288,13 @@ Repeat the previous steps for `kafka-producer` and `topic-producer`.
 
 ==== Decision Strategy
 
-Affermative decision strategy means that at least one permission must be evaluated positive.
+Affirmative decision strategy means that at least one permission must be evaluated positive.
 
 Select the *Clients* entry from left menu and open the `kafka-authz` client.
 
 . Switch to the *Authorization* tab
 . In the nested tabs line, select *Settings*
-. Set *Decision Strategy* to `Affermative`
+. Set *Decision Strategy* to `Affirmative`
 . Save
 
 ==== Create Authorization Scopes
