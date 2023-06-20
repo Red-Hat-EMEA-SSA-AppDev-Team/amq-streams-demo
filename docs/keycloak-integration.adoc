@@ -70,6 +70,10 @@ in addition to the two clients, the import prepares some definitions that will b
 
 == Kafka authentication
 
+The following picture shows the authentication flow when the set up is completed:
+
+image:images/keycloak-kafka-authentication.png[]
+
 Extract the Keycloak CA certificate:
 
 [source,shell]
@@ -182,6 +186,10 @@ echo | cat - k8s/keycloak/06-application.properties | envsubst | sed 's/consumer
 Run the producer to check it's working as expected.
 
 == Kafka Authorization
+
+In this section, it will be enabled the Kafka authorization and the SSO will be used to retrieve the permission. The following picture shows the interactions between the parties:
+
+image:images/keycloak-kafka-authz.png[]
 
 === Kafka Authorization model
 
