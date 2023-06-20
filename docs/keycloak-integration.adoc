@@ -605,6 +605,8 @@ It's possible to pass the client id (a meaningful username) during the authentic
 .. Tick at `username` token mapper
 .. Click `Add selected` button
 
+image:images/keycloak-username-mapper.png[]
+
 . On the Kafka side add the following configuration
 +
 [source,yaml]
@@ -616,6 +618,29 @@ spec:
           userNameClaim: preferred_username 
 ----
 
+If you enable the username claim but you haven't configured the mapper in Keycloak, you will get an authentication error on the client and in the server logs:
+
+----
+2023-06-06 17:50:29,556 DEBUG Runtime failure during token validation (ErrId: 5cbf1e54) (io.strimzi.kafka.oauth.server.JaasServerOauthValidatorCallbackHandler) [data-plane-kafka-network-thread-0-ListenerName(EXTERNAL-9094)-SASL_SSL-4]
+io.strimzi.kafka.oauth.validator.ValidationException: Failed to extract principal - check usernameClaim, fallbackUsernameClaim configuration
+    at io.strimzi.kafka.oauth.validator.JWTSignatureValidator.extractPrincipal(JWTSignatureValidator.java:449)
+----
+
+=== Idempotent Write at cluster level
+
+By default, producers requires idempotent write privilege at cluster level otherwise you can spot the following error in the server logs:
+
+----
+2023-06-14 15:23:57,728 INFO Principal = OAuthKafkaPrincipal(User:687e5022-8276-497f-9c1e-659dd0643bb9, groups: null, session: 1850418031, token: eyJh**EyIg) is Denied Operation = Write from host = 10.130.0.2 on resource = Topic:UNKNOWN:NONE for request = InitProducerId with resourceRefCount = 0 (kafka.authorizer.logger) [data-plane-kafka-request-handler-0]
+----
+
+Make sure that you have 
+
+* a resource `Cluster:*` with `IdempotentWrite` as scope
+
+* a resource-scope permission on `Cluster:*` matching the producer client id (policy).
++
+image:images/keycloak-cluster-permission.png[]
 
 === Further readings
 
