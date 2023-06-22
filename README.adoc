@@ -132,7 +132,9 @@ IMPORTANT: Watching at the consumer log you should notice that it temporarily st
 oc patch kafka my-cluster --patch '{"spec":{"cruiseControl": {}}}' --type=merge
 ----
 
-. Point out the partition leaders
+. To simulate an unbalanced workload, the following steps will configure the producer to write messages on the partitions which leader is hosted in the same Kafka server:
+
+.. Locate the partition leaders 
 +
 [source,shell]
 ----
@@ -141,22 +143,22 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
             --describe --topic event
 ----
 
-. Change the producer to create messages on a set of partitions which have the same leader
+.. Update the producer _configmap_ to select all the partitions which have the leaders located in the same server:
 +
 [source,shell]
 ----
 oc edit configmap kafka-producer-config
 ----
+
+.. Update the following variables matching the desired partitions, e.g.:
 +
-update the variables in order to produce only on selected partitions, e.g.:
-+
-[source,shell]
+[source,yaml]
 ----
   PRODUCER_PARTED: "true"
-  PRODUCER_PARTITIONS: 0,3,6
+  PRODUCER_PARTITIONS: 0,3,6,9
 ----
-+
-bump the kafka producer application:
+
+.. Bump the Kafka producer application:
 +
 [source,shell]
 ----
