@@ -3,6 +3,7 @@ kind: Kafka
 metadata:
   name: my-cluster
 spec:
+  cruiseControl: {}
   kafka:
     version: 3.4.0
     replicas: 3

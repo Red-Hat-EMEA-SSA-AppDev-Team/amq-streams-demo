@@ -20,18 +20,21 @@ oc apply -f k8s/01-kafka-metrics.yaml
 oc apply -f k8s/02-kafkatopic.yaml
 ----
 
-== Enabling monitoring
+== Enabling user workload monitoring
 
 NOTE: This demo relies on the _cluster-admin_ role.
 
-Create cluster-monitoring-config ConfigMap object:
+The following command:
+
+* adds a _ConfigMap_ named `cluster-monitoring-config` in the `openshift-monitoring` namespace
+* creates a _ClusterRoleBinding_ which grants permissions to `grafana-serviceaccount`
 
 [source,shell]
 ----
 oc apply -f k8s/03-cluster-monitor.yaml
 ----
 
-Check that the prometheus-operator, prometheus-user-workload and thanos-ruler-user-workload pods are running in the openshift-user-workload-monitoring project. It might take a short while for the pods to start:
+The ConfigMap triggers the deployment of Prometheus and Thanos: after a while it's possible to check that the `prometheus-operator`, `prometheus-user-workload` and `thanos-ruler-user-workload` pods are running in the `openshift-user-workload-monitoring` project.
 
 [source,shell]
 ----
@@ -49,21 +52,25 @@ oc apply -f k8s/04-pod-monitor.yaml -n my-kafka
 oc apply -f k8s/05-prometheus-rules.yaml -n my-kafka
 ----
 
-Create a service account for Grafana:
+Grafana uses the Thanos Querier which works as Prometheus proxy to scrape the metrics.
 
-[source,shell]
-----
-oc apply -f k8s/06-graphana-auth.yaml -n my-kafka
-----
-
-Create Prometheus datasource for Grafana and deploy Grafana
+The following script:
+* creates a _service account_ for Grafana with an _access token_
+* creates a datasource configuration for Grafana to scrape the metrics. It points to Thanos Querier which acts as a Prometheus proxy and uses the previous created _access token_ to gain access. 
 
 [source,shell]
 ----
 k8s/07-create-datasource.sh
+----
+
+*Deploy* Grafana and expose it:
+
+[source,shell]
+----
 oc apply -f k8s/08-grafana.yaml
 oc create route edge --service=grafana --namespace=my-kafka
 ----
+
 
 Login with the default credentials (`admin/admin`) and then change the password.
 
@@ -620,6 +627,13 @@ Drop the PVC:
 oc delete pvc --selector="strimzi.io/cluster=my-cluster"
 ----
 
+Delete kafka rebalance:
+
+[source,shell]
+----
+oc delete kafkarebalance full-rebalance
+----
+
 Then, you can apply again the first two yaml files.
 
 === Refresh Grafana token
@@ -630,6 +644,7 @@ To refresh it:
 
 [source,shell]
 ----
+oc delete serviceaccounts grafana-serviceaccount
 oc delete configmap grafana-config
 k8s/07-create-datasource.sh
 oc delete pod --selector name=grafana
