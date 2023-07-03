@@ -566,6 +566,40 @@ oc delete keycloakclients kc-kafka -n keycloak
 oc delete keycloakrealms kafka -n keycloak
 ----
 
+=== Client authentication configuration
+
+In Apache Kafka, the `security.protocol` property is used to specify the security protocol to be used for communication between Kafka clients and brokers. The available options for the `security.protocol` property are as follows:
+
+. `PLAINTEXT`: This is the default option and represents an insecure mode of communication where no security mechanisms are employed. Data is transmitted in plain text over the network.
+
+. `SSL`: When `security.protocol` is set to SSL, Kafka clients and brokers use the SSL/TLS protocol to establish a secure encrypted connection. SSL provides encryption and server authentication, securing the data transmission between clients and brokers.
+
+. `SASL_PLAINTEXT`: This option combines the Simple Authentication and Security Layer (SASL) protocol with plaintext communication. It enables authentication without encryption, suitable for environments where confidentiality is not a concern but authentication is required.
+
+. `SASL_SSL`: This option combines the SASL protocol with the SSL/TLS protocol. It provides both authentication and encryption, ensuring secure communication between clients and brokers.
+
+The `sasl.mechanism` property is used to specify the SASL (Simple Authentication and Security Layer) mechanism to be used for authentication between Kafka clients and brokers. The available options for the `sasl.mechanism` property are as follows:
+
+
+. `PLAIN`: The PLAIN mechanism allows for username/password-based authentication. It sends the username and password in plaintext, so it should only be used with a secure underlying transport (such as SSL) to protect the credentials.
+
+. `SCRAM-SHA-256`: SCRAM-SHA-256 (Salted Challenge Response Authentication Mechanism with SHA-256) is a secure mechanism for username/password-based authentication. It provides a secure challenge-response mechanism, protecting the credentials during authentication.
+
+. `SCRAM-SHA-512`: Similar to SCRAM-SHA-256, SCRAM-SHA-512 is a more secure variant that uses the SHA-512 hashing algorithm for password-based authentication.
+
+. `OAUTHBEARER`: The OAUTHBEARER mechanism is used for OAuth 2.0-based authentication. It allows clients to authenticate with Kafka brokers using OAuth 2.0 tokens obtained from an OAuth 2.0 authorization server.
+
+. `GSSAPI`: GSSAPI (Generic Security Services Application Programming Interface) is commonly used for authentication in Kerberos environments. It provides strong authentication and security using Kerberos tickets.
+
+The choice of `sasl.mechanism` depends on the specific authentication mechanism and infrastructure you have in place. GSSAPI is commonly used in Kerberos environments, while PLAIN, SCRAM-SHA-256, and SCRAM-SHA-512 are suitable for username/password-based authentication. OAUTHBEARER is used when integrating with OAuth 2.0-based authentication systems.
+
+In a Quarkus application the previous options can be set through the following environment variables:
+
+----
+  KAFKA_SECURITY_PROTOCOL: SASL_SSL
+  KAFKA_SASL_MECHANISM: OAUTHBEARER
+----
+
 === Internal URL
 
 If you want to a direct connection between Kafka and SSO leveraging the internal network, you can change the URL with the internal DNS but in this case, you also need to use the internal CA certificate:
