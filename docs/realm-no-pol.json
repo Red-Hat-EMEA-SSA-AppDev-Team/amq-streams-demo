@@ -183,6 +183,7 @@
     {
       "username": "service-account-kafka-consumer",
       "serviceAccountClientId": "kafka-consumer",
+      "enabled": true,
       "realmRoles": [
         "default-roles-kafka",
         "topic-consumer"
@@ -191,6 +192,7 @@
     {
       "username": "service-account-kafka-producer",
       "serviceAccountClientId": "kafka-producer",
+      "enabled": true,
       "realmRoles": [
         "topic-producer",
         "default-roles-kafka"
