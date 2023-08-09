@@ -620,8 +620,8 @@ Obtain an access token from Keycloak using the client credentials flow:
 set ACCESS_TOKEN (curl -X POST https://$KEYCLOAK_ROUTE/auth/realms/kafka/protocol/openid-connect/token \
   --header 'Content-Type: application/x-www-form-urlencoded' \
   --data-urlencode 'grant_type=client_credentials' \
-  --data-urlencode 'client_id=client-secret-kafka' \
-  --data-urlencode 'client_secret=client-secret-kafka' \
+  --data-urlencode 'client_id=kafka-producer' \
+  --data-urlencode 'client_secret=kafka-producer-secret' \
   --data-urlencode 'scope=openid' \
   --silent | jq -r '.access_token')
 ----
@@ -630,7 +630,7 @@ Use the obtained access token to retrieve the JWT by making a request to the Key
 
 [source,shell]
 ----
-curl -X GET 'https://$KEYCLOAK_ROUTE/auth/realms/kafka/protocol/openid-connect/userinfo' \
+curl -X GET 'https://'$KEYCLOAK_ROUTE'/auth/realms/kafka/protocol/openid-connect/userinfo' \
   --header "Authorization: Bearer $ACCESS_TOKEN" \
   --silent | jq -r '.sub'
 ----
