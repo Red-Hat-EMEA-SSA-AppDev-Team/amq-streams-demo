@@ -609,6 +609,7 @@ oc logs --tail=20 -f --selector="app.kubernetes.io/name=kafka-producer"
 == Further Configuration
 
 * xref:docs/keycloak-integration.adoc[Keycloak integration]
+* xref:docs/registry.adoc[Apicurion Schema Registry]
 
 == Clean up
 

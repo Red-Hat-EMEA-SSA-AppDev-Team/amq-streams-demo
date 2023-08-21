@@ -51,9 +51,7 @@ set -x KEYCLOAK_ROUTE (oc get route keycloak -n keycloak -o jsonpath='{.spec.hos
 oc patch apicurioregistry/registry --type=merge --patch-file=(cat k8s/registry/02-security.yaml | envsubst | psub)
 ----
 
-Optionally, you can enable the authorization and the following definitions can be used to create clients and roles expected by the Service Registry:
-
-link:docs/sso-registry.json[]
+Optionally, you can enable the authorization and the following definitions can be used to import in Keycloak the clients and roles expected by the Service Registry: link:../docs/sso-registry.json[]
 
 This will create 3 roles (sr-developer, sr-admin, sr-readonly) and 2 clients (registry-client-api, registry-client-ui).
 
@@ -285,7 +283,7 @@ curl -N http://localhost:8080/consumed-movies
 === Produce a message in version 2
 
 Open a new terminal and produce a message:
-+
+
 [source,shell]
 ----
 curl --header "Content-Type: application/json" \
@@ -299,7 +297,7 @@ Examine the logs of the consumers on their respective windows. You should observ
 === Produce a message in version 1
 
 Now trigger the producer for the application version 1:
-+
+
 [source,shell]
 ----
 curl --header "Content-Type: application/json" \
