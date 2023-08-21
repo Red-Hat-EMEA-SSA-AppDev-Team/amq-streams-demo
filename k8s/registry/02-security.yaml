@@ -1,0 +1,10 @@
+# patch + template
+spec:
+  configuration:
+    env:
+    - name: CORS_ALLOWED_ORIGINS
+      value: '*'
+    security:
+      keycloak:
+        url: "https://${KEYCLOAK_ROUTE}/auth"
+        realm: "kafka"

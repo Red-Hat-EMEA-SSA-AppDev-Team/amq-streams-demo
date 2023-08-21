@@ -1,0 +1,18 @@
+{
+  "namespace": "com.redhat.quarkus.kafka",
+  "type": "record",
+  "name": "Movie",
+  "fields": [
+    {
+      "name": "title",
+      "type": {
+        "type": "string",
+        "avro.java.string": "String"
+      }
+    },
+    {
+      "name": "year",
+      "type": "int"
+    }
+  ]
+}

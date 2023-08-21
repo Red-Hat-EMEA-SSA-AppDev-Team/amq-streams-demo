@@ -1,0 +1,14 @@
+# template
+apiVersion: registry.apicur.io/v1
+kind: ApicurioRegistry
+metadata:
+  name: registry
+spec:
+  configuration:
+    persistence: 'kafkasql'
+    kafkasql:
+      bootstrapServers: ${KAFKA_ROUTE}
+  deployment:
+    host: registry-service-${PROJECT_DOMAIN}
+    managedResources:
+      disableIngress: true
