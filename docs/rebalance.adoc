@@ -17,9 +17,9 @@ oc patch kafka my-cluster --patch '{"spec":{"cruiseControl": {}}}' --type=merge
 
 == Simulate an unbalanced workload
 
-. To simulate an unbalanced workload, the following steps will configure the producer to write messages on the partitions which leader is hosted in the same Kafka server:
+To simulate an unbalanced workload, the following steps will configure the producer to write messages on the partitions which leader is hosted in the same Kafka server:
 
-.. Locate the partition leaders 
+. Locate the partition leaders 
 +
 [source,shell]
 ----
@@ -28,14 +28,14 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
             --describe --topic event
 ----
 
-.. Update the producer _configmap_ to select all the partitions which have the leaders located in the same server:
+. Update the producer _configmap_ to select all the partitions which have the leaders located in the same server:
 +
 [source,shell]
 ----
 oc edit configmap kafka-producer-config
 ----
 
-.. Update the following variables matching the desired partitions, e.g.:
+. Update the following variables matching the desired partitions, e.g.:
 +
 [source,yaml]
 ----
@@ -43,7 +43,7 @@ oc edit configmap kafka-producer-config
   PRODUCER_PARTITIONS: 0,3,6,9
 ----
 
-.. Bump the Kafka producer application:
+. Bump the Kafka producer application:
 +
 [source,shell]
 ----
