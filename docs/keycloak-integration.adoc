@@ -389,7 +389,7 @@ If the Keycloak definitions are correct, you can execute the local consumer and 
 
 If you get an authorization exception on the client side, you can enable the logging in Kafka to investigate the OAuth behavior.
 
-See xref:../README.adoc#Troubleshooting[Troubleshooting] for more information.
+See xref:../docs/clean.adoc#Troubleshooting[Troubleshooting] for more information.
 
 == Enable OAuth for client applications in OpenShift
 

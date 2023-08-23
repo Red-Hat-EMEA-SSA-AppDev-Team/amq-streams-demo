@@ -1,0 +1,84 @@
+= Environment clean up and troubleshooting
+
+== Clean up
+
+In order to start the demo from scratch, with minimal effort: delete only the kafka broker and the topics:
+
+[source,shell]
+----
+oc delete kafkatopics --selector="strimzi.io/cluster=my-cluster"
+oc delete kafka my-cluster
+----
+
+Drop the PVC:
+
+[source,shell]
+----
+oc delete pvc --selector="strimzi.io/cluster=my-cluster"
+----
+
+Delete kafka rebalance:
+
+[source,shell]
+----
+oc delete kafkarebalance full-rebalance
+----
+
+Then, you can apply again the first two yaml files.
+
+=== Refresh Grafana token
+
+Prometheus access token lasts 7 days.
+
+To refresh it:
+
+[source,shell]
+----
+oc delete serviceaccounts grafana-serviceaccount
+oc delete configmap grafana-config
+k8s/07-create-datasource.sh
+oc delete pod --selector name=grafana
+----
+
+=== Grafana clean up
+
+Delete Grafana deployment:
+
+[source,shell]
+----
+oc delete all --selector application=kafka-monitor
+oc delete configmap grafana-config
+----
+
+Deploy Grafana running step 7 and 8.
+
+=== Database clean up
+
+[source,shell]
+----
+oc rsh event-db-<id>
+$ psql -U quarkus quarkus
+quarkus=> DELETE FROM event;
+quarkus=> ALTER SEQUENCE event_seq RESTART WITH 1;
+----
+
+== Troubleshooting
+
+When on the client side you get an error id, e.g.:
+
+```
+2023-06-06 17:50:29,556 DEBUG Runtime failure during token validation (ErrId: 5cbf1e54)
+```
+
+You can search that id in the server log to gather further insights.
+
+To raise the log verbosity, use the following configuration:
+
+```yaml
+spec:
+  kafka:
+    logging:
+      type: inline
+      loggers:
+        log4j.logger.io.strimzi: "DEBUG"
+```

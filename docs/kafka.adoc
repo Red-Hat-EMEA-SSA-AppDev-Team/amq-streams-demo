@@ -1,0 +1,127 @@
+= Core Kafka installation and operations
+
+== Create Kafka broker and topic
+
+Add **AMQ Streams** operator to your OpenShift environment.
+
+Create a Broker with metrics enabled:
+
+- consumer lag
+- consumer offsets
+
+[source,ruby]
+----
+oc new-project my-kafka
+oc apply -f k8s/01-kafka-metrics.yaml
+oc apply -f k8s/02-kafkatopic.yaml
+----
+
+== Enabling user workload monitoring
+
+NOTE: This demo relies on the _cluster-admin_ role.
+
+The following command:
+
+* adds a _ConfigMap_ named `cluster-monitoring-config` in the `openshift-monitoring` namespace
+* creates a _ClusterRoleBinding_ which grants permissions to `grafana-serviceaccount`
+
+[source,shell]
+----
+oc apply -f k8s/03-cluster-monitor.yaml
+----
+
+The ConfigMap triggers the deployment of Prometheus and Thanos: after a while it's possible to check that the `prometheus-operator`, `prometheus-user-workload` and `thanos-ruler-user-workload` pods are running in the `openshift-user-workload-monitoring` project.
+
+[source,shell]
+----
+oc -n openshift-user-workload-monitoring get pod
+----
+
+Enable:
+- monitoring for kafka resources
+- prometheus rules
+
+
+[source,shell]
+----
+oc apply -f k8s/04-pod-monitor.yaml -n my-kafka
+oc apply -f k8s/05-prometheus-rules.yaml -n my-kafka
+----
+
+Grafana uses the Thanos Querier which works as Prometheus proxy to scrape the metrics.
+
+The following script:
+* creates a _service account_ for Grafana with an _access token_
+* creates a datasource configuration for Grafana to scrape the metrics. It points to Thanos Querier which acts as a Prometheus proxy and uses the previous created _access token_ to gain access. 
+
+[source,shell]
+----
+k8s/07-create-datasource.sh
+----
+
+*Deploy* Grafana and expose it:
+
+[source,shell]
+----
+oc apply -f k8s/08-grafana.yaml
+oc create route edge --service=grafana --namespace=my-kafka
+----
+
+
+Login with the default credentials (`admin/admin`) and then change the password.
+
+Load the dashboard definitions from `grafana-dashboards` folder:
+
+- `strimzi-kafka.json`
+- `strimzi-kafka-exporter.json`
+
+== Install the consumer and producer applications
+
+[source,shell]
+----
+mvn -f kafka-consumer/pom.xml package -Dquarkus.kubernetes.deploy=true -DskipTests
+mvn -f kafka-producer/pom.xml package -Dquarkus.kubernetes.deploy=true -DskipTests
+----
+
+Further information about the applications:
+
+* xref:../kafka-consumer/README.md[Consumer App Readme]
+
+* xref:../kafka-producer/README.md[Producer App Readme]
+
+== Demo routines
+
+=== AMQ Streams High Availability
+
+. Show consumer logs
++
+[source,shell]
+----
+oc logs --tail=20 -f --selector="app.kubernetes.io/name=kafka-consumer"
+----
+
+. Show producer logs
++
+[source,shell]
+----
+oc logs --tail=20 -f --selector="app.kubernetes.io/name=kafka-producer"
+----
+
+. Show the partitions distribution
++
+[source,shell]
+----
+oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
+                                --bootstrap-server my-cluster-kafka-bootstrap:9092 \
+                                --describe --topic event
+----
+
+. Test the Kafka's resilience and consistency by forcefully shutting down one of brokers' pod.
++
+TIP: Use the following command: `oc delete --force pod <pod-name>`
++
+IMPORTANT: Watching at the consumer log you should notice that it temporarily stops processing some messages (missing messages). This is expected! In fact, Kafka promotes consistency over availability, so until a new partition leader is elected you cannot write or consume messages on that partition. Eventually, the new leader will become available and the missing messages will be caught up.
+
+. Show again the topic distribution on the cluster members
+
+. Show the dashboard

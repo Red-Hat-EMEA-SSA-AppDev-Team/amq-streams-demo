@@ -1,0 +1,157 @@
+= AMQ Streams Rebalancing
+
+. Add the Cruise Control
++
+[source,shell]
+----
+oc patch kafka my-cluster --patch '{"spec":{"cruiseControl": {}}}' --type=merge
+----
+
+. To simulate an unbalanced workload, the following steps will configure the producer to write messages on the partitions which leader is hosted in the same Kafka server:
+
+.. Locate the partition leaders 
++
+[source,shell]
+----
+oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
+            --bootstrap-server my-cluster-kafka-bootstrap:9092 \
+            --describe --topic event
+----
+
+.. Update the producer _configmap_ to select all the partitions which have the leaders located in the same server:
++
+[source,shell]
+----
+oc edit configmap kafka-producer-config
+----
+
+.. Update the following variables matching the desired partitions, e.g.:
++
+[source,yaml]
+----
+  PRODUCER_PARTED: "true"
+  PRODUCER_PARTITIONS: 0,3,6,9
+----
+
+.. Bump the Kafka producer application:
++
+[source,shell]
+----
+oc scale deployment/kafka-producer --replicas=0
+oc scale deployment/kafka-producer --replicas=1
+----
+
+. Check that partitions grows at different paces, running the following command:
++
+[source,shell]
+----
+oc exec -it my-cluster-kafka-0 -- bin/kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list localhost:9092 --topic event
+----
+
+. Deploy the rebalance configuration which will trigger the optimization analysis:
++
+[source,shell]
+----
+oc apply -f k8s/10-kafka-rebalance-full.yaml
+----
+
+. Review the optimization proposal:
++
+[source,shell]
+----
+oc describe kafkarebalance full-rebalance
+----
+
+. Approve the proposal
++
+[source,shell]
+----
+oc annotate kafkarebalances.kafka.strimzi.io full-rebalance strimzi.io/rebalance=approve
+----
++
+[TIP]
+==== 
+It's possible to trigger a new analysis on the existing rebalancing configuration:
+
+[source,shell]
+----
+oc annotate kafkarebalances.kafka.strimzi.io full-rebalance strimzi.io/rebalance=refresh
+----
+====
+
+. Rebalancing takes some time, run again the following command and wait for `Status: True`
++
+[source,shell]
+----
+oc describe kafkarebalance full-rebalance
+----
+
+. Run again the describe topic command, you should spot the overloaded partitions moved on different leaders:
++
+[source,shell]
+----
+oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
+            --bootstrap-server my-cluster-kafka-bootstrap:9092 \
+            --describe --topic event
+----
+
+When the Kafka cluster scales, existing topics do not leverage the newly available brokers, so they remain idle until new topics are created.
+The Cruise Control can be used to evenly distribute existing topics on the new available resources, as the following steps will show:
+
+. Increase the Kafka replicas:
++
+[source,shell]
+----
+oc patch kafka my-cluster --patch '{"spec":{"kafka": {"replicas": 4}}}' --type=merge
+----
+
+. Change the producer configurations to create an evenly distributed workload:
++
+[source,shell]
+----
+oc edit configmap/kafka-producer-config
+----
++
+Modify the environment variables:
++
+[source,shell]
+----
+  PRODUCER_PARTED: "false"
+  PRODUCER_TICK_FREQUENCY: "10"
+----
+
+. Restart the producer and consumer application
+
+. Open the Grafana dashboard, after a few minutes, the CPU graph should look like the following:
++
+image:docs/images/graphana-cpu-unbalaced.png[Kafka CPU]
++
+The new broker uses less resources.
+
+. Watching at the topic information confirms that all partitions are on the first 3 brokers (0,1,2)
++
+[source,shell]
+----
+oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
+            --bootstrap-server my-cluster-kafka-bootstrap:9092 \
+            --describe --topic event
+----
+
+. Deploy the rebalance configuration `mode: add-brokers`, which is tailored to leverage the new available brokers:
++
+[source,shell]
+----
+oc apply -f k8s/11-kafka-rebalance-add-brokers.yaml
+----
+
+. Review and approve the optimization proposal:
++
+[source,shell]
+----
+oc describe kafkarebalance full-rebalance
+oc annotate kafkarebalances.kafka.strimzi.io full-rebalance strimzi.io/rebalance=approve
+----
+
+. Rebalancing takes a couple of minutes, you can monitor the Grafana dashboard to see the changes and the topic information to understand how the partitions and their replicas are reorganized across the brokers.
+
+. Finally, you can ask the Cruise Control to shrink your partitions on less brokers and then scale the cluster down.
