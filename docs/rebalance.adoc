@@ -8,12 +8,14 @@ image:https://i.ytimg.com/vi/DAm9tUAPgGE/hq720.jpg[link=https://youtu.be/DAm9tUA
 
 == Enable Cruise Control
 
-. Add Cruise Control to the cluster configuration:
-+
+Add Cruise Control to the cluster configuration:
+
 [source,shell]
 ----
 oc patch kafka my-cluster --patch '{"spec":{"cruiseControl": {}}}' --type=merge
 ----
+
+== Simulate an unbalanced workload
 
 . To simulate an unbalanced workload, the following steps will configure the producer to write messages on the partitions which leader is hosted in the same Kafka server:
 
@@ -48,6 +50,8 @@ oc edit configmap kafka-producer-config
 oc scale deployment/kafka-producer --replicas=0
 oc scale deployment/kafka-producer --replicas=1
 ----
+
+== Monitor the cluster and engage the rebalancing
 
 . Check that partitions grows at different paces, running the following command:
 +
@@ -94,14 +98,18 @@ oc annotate kafkarebalances.kafka.strimzi.io full-rebalance strimzi.io/rebalance
 oc describe kafkarebalance full-rebalance
 ----
 
-. Run again the describe topic command, you should spot the overloaded partitions moved on different leaders:
-+
+== Analyze the optimization results
+
+Run again the describe topic command, you should spot the overloaded partitions moved on different leaders:
+
 [source,shell]
 ----
 oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
             --bootstrap-server my-cluster-kafka-bootstrap:9092 \
             --describe --topic event
 ----
+
+== Scaling up and distribute the workload
 
 When the Kafka cluster scales, existing topics do not leverage the newly available brokers, so they remain idle until new topics are created.
 The Cruise Control can be used to evenly distribute existing topics on the new available resources, as the following steps will show:
@@ -132,7 +140,7 @@ Modify the environment variables:
 
 . Open the Grafana dashboard, after a few minutes, the CPU graph should look like the following:
 +
-image:docs/images/graphana-cpu-unbalaced.png[Kafka CPU]
+image:../docs/images/graphana-cpu-unbalaced.png[Kafka CPU]
 +
 The new broker uses less resources.
 
