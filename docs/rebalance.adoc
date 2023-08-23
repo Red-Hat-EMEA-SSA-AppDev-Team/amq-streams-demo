@@ -1,6 +1,14 @@
 = AMQ Streams Rebalancing
 
-. Add the Cruise Control
+For an introduction to this topic, we recommend reading the following blog and/or watching this video:
+
+link:https://developers.redhat.com/articles/2023/07/05/how-use-kafka-cruise-control-cluster-optimization[How to use Kafka Cruise Control for cluster optimization]
+
+image:https://i.ytimg.com/vi/DAm9tUAPgGE/hq720.jpg[link=https://youtu.be/DAm9tUAPgGE,320]
+
+== Enable Cruise Control
+
+. Add Cruise Control to the cluster configuration:
 +
 [source,shell]
 ----
