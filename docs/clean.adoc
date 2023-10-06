@@ -26,32 +26,6 @@ oc delete kafkarebalance full-rebalance
 
 Then, you can apply again the first two yaml files.
 
-=== Refresh Grafana token
-
-Prometheus access token lasts 7 days.
-
-To refresh it:
-
-[source,shell]
-----
-oc delete serviceaccounts grafana-serviceaccount
-oc delete configmap grafana-config
-k8s/07-create-datasource.sh
-oc delete pod --selector name=grafana
-----
-
-=== Grafana clean up
-
-Delete Grafana deployment:
-
-[source,shell]
-----
-oc delete all --selector application=kafka-monitor
-oc delete configmap grafana-config
-----
-
-Deploy Grafana running step 7 and 8.
-
 === Database clean up
 
 [source,shell]

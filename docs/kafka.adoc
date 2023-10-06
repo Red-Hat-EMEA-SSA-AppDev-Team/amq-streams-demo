@@ -51,6 +51,7 @@ oc apply -f k8s/05-prometheus-rules.yaml -n my-kafka
 Grafana uses the Thanos Querier which works as Prometheus proxy to scrape the metrics.
 
 The following script:
+
 * creates a _service account_ for Grafana with an _access token_
 * creates a datasource configuration for Grafana to scrape the metrics. It points to Thanos Querier which acts as a Prometheus proxy and uses the previous created _access token_ to gain access. 
 
@@ -125,3 +126,31 @@ IMPORTANT: Watching at the consumer log you should notice that it temporarily st
 . Show again the topic distribution on the cluster members
 
 . Show the dashboard
+
+== Appendix
+
+=== Refresh Grafana token
+
+Prometheus access token lasts 7 days.
+
+To refresh it:
+
+[source,shell]
+----
+oc delete serviceaccounts grafana-serviceaccount
+oc delete configmap grafana-config
+k8s/07-create-datasource.sh
+oc delete pod --selector name=grafana
+----
+
+=== Full Grafana clean up
+
+Delete Grafana deployment:
+
+[source,shell]
+----
+oc delete all --selector application=kafka-monitor
+oc delete configmap grafana-config
+----
+
+Deploy Grafana running the scripts `07` and `08`.
