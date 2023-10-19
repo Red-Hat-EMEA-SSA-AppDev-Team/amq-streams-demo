@@ -171,3 +171,29 @@ oc annotate kafkarebalances.kafka.strimzi.io full-rebalance strimzi.io/rebalance
 . Rebalancing takes a couple of minutes, you can monitor the Grafana dashboard to see the changes and the topic information to understand how the partitions and their replicas are reorganized across the brokers.
 
 . Finally, you can ask the Cruise Control to shrink your partitions on less brokers and then scale the cluster down.
+
+== Clean up
+
+In order to start the demo from scratch, with minimal effort: delete only the kafka broker and the topics:
+
+[source,shell]
+----
+oc delete kafkatopics --selector="strimzi.io/cluster=my-cluster"
+oc delete kafka my-cluster
+----
+
+Drop the PVC:
+
+[source,shell]
+----
+oc delete pvc --selector="strimzi.io/cluster=my-cluster"
+----
+
+Delete kafka rebalance:
+
+[source,shell]
+----
+oc delete kafkarebalance full-rebalance
+----
+
+In order to repeat the rebalancing demo, you have to create again the cluster and the topic.
