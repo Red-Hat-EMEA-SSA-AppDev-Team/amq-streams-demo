@@ -14,7 +14,7 @@ For demo purposes it can generate messages only on given partitions.
 
 ## Running the application in dev mode
 
-> **_NOTE:_**: This application is supposed to run along with the companion consumer application, so it relies on the backend services started by that applciation. Make sure that you have started those services before starting this application.
+> **_NOTE:_**: This application is supposed to run along with the companion consumer application, so it relies on the backend services started by that application. Make sure that you have started those services before starting this application.
 
 You can run your application in dev mode that enables live coding using:
 ```shell script
