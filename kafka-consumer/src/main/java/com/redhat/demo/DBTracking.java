@@ -1,32 +1,27 @@
 package com.redhat.demo;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.control.ActivateRequestContext;
-import javax.inject.Inject;
-import javax.persistence.PersistenceException;
-
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.hibernate.reactive.mutiny.Mutiny;
 
 import com.redhat.demo.model.Event;
 import com.redhat.demo.model.KafkaState;
 
 import io.quarkus.arc.lookup.LookupIfProperty;
+import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+import jakarta.persistence.PersistenceException;
 
 @LookupIfProperty(name = "tracking.db", stringValue = "true")
 @ApplicationScoped
 public class DBTracking implements TrackingService {
 
-    @Inject
-    Mutiny.Session session;
-
     @Override
     @ActivateRequestContext
     public Uni<Void> track(ConsumerRecord<Long, String> record) {
         System.out.println("DBTracking.track() - key: " + record.key());
-        return session
-                .withTransaction(t -> {
+        
+        return Panache.withTransaction( () -> {
                     KafkaState state = new KafkaState();
                     state.topic = record.topic();
                     state.partition = record.partition();
@@ -48,7 +43,6 @@ public class DBTracking implements TrackingService {
                     else
                         return m.getCause();
                 })
-                .onFailure(PersistenceException.class).recoverWithNull()
-                .onTermination().call(() -> session.close());
+                .onFailure(PersistenceException.class).recoverWithNull();
     }
 }

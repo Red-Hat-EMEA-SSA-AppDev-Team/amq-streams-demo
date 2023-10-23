@@ -1,6 +1,6 @@
 package com.redhat.demo.model;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 

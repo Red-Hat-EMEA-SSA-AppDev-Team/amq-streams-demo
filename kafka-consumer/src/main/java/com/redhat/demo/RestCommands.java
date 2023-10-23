@@ -1,8 +1,8 @@
 package com.redhat.demo;
 
-import javax.inject.Inject;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
 
 @Path("/")
 public class RestCommands {
