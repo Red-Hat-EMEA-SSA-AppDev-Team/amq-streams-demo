@@ -347,8 +347,11 @@ Prerequisites:
 Grant permissions to _consume_ from a topic (Scope-based Permission):
 
 . Navigate in `kafka-authz` client, then *Authorization* tab
-. Delete `Default Permission` if it exists
-. In the second level of tabs select *Permission*, from *Create Permission* drop down list select *Scope-Base*
+. In the second level of tabs select *Permission*
+
+.. Delete `Default Permission` if it exists
+
+. From *Create Permission* drop down list select *Scope-Base*
 
 .. Enter a meaningful *name*: `Topic consumers can read and describe topic:event`
 .. In the *Resource* field select `Topic:event`
