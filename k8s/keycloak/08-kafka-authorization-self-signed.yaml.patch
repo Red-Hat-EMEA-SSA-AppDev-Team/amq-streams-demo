@@ -5,8 +5,12 @@ spec:
       tokenEndpointUri: https://${KEYCLOAK_ROUTE}/auth/realms/kafka/protocol/openid-connect/token
       clientId: kafka-authz
       delegateToKafkaAcls: false
+      disableTlsHostnameVerification: true
       superUsers:
       - superuser
+      tlsTrustedCertificates:
+      - secretName: oauth-server-cert
+        certificate: ca.crt
       grantsRefreshPeriodSeconds: 60
       grantsRefreshPoolSize: 5
       connectTimeoutSeconds: 60
