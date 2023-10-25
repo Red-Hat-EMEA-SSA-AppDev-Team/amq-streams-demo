@@ -74,20 +74,12 @@ The following picture shows the authentication flow when the set up is completed
 
 image:images/keycloak-kafka-authentication.png[]
 
-Extract the Keycloak CA certificate:
+Switch on the kafka project and keep the Keycloak endpoint in a convenient environment variable:
 
 [source,shell]
 ----
 oc project my-kafka
 set -x KEYCLOAK_ROUTE (oc get route keycloak -n keycloak -o jsonpath='{.spec.host}')
-echo "" | openssl s_client -servername $KEYCLOAK_ROUTE -connect $KEYCLOAK_ROUTE:443 -prexit 2>/dev/null| openssl x509 -outform PEM > keycloak-ext.crt
-----
-
-Create a secret to hold the Keycloak CA:
-
-[source,shell]
-----
-oc create secret generic oauth-server-cert --from-file=ca.crt=keycloak-ext.crt 
 ----
 
 The following command adds a new Kafka listener that allows access to applications that bring the JWT token issued by keycloak:
@@ -119,11 +111,35 @@ spec:
           accessTokenIsJwt: true
           enableOauthBearer: true
           maxSecondsWithoutReauthentication: 3600 
-          tlsTrustedCertificates: 
-          - secretName: oauth-server-cert
-            certificate: ca.crt
-          disableTlsHostnameVerification: true 
 ----
+
+=== Keycloak self signed CA
+If your OpenShift cluster relies on a self signed CA also the Keycloak endpoint share the same CA.
+
+In this case you have to add the self signed CA to the Kafka configuration.
+
+Extract the Keycloak CA certificate:
+
+[source,shell]
+----
+echo "" | openssl s_client -servername $KEYCLOAK_ROUTE -connect $KEYCLOAK_ROUTE:443 -prexit 2>/dev/null| openssl x509 -outform PEM > keycloak-ext.crt
+----
+
+Create a secret to hold the Keycloak CA:
+
+[source,shell]
+----
+oc create secret generic oauth-server-cert --from-file=ca.crt=keycloak-ext.crt 
+----
+
+Update the listeners configuration:
+
+[source,shell]
+----
+oc patch kafka/my-cluster --type=merge --patch-file=(cat k8s/keycloak/05-kafka-listener-self-signed.yaml.patch | envsubst | psub)
+----
+
+TIP: Bash alternative: `oc patch kafka/my-cluster --type=merge -p "$(cat k8s/keycloak/05-kafka-listener-self-signed.yaml.patch | envsubst)"`
 
 == Client side configuration
 
@@ -393,36 +409,9 @@ See xref:../docs/clean.adoc#Troubleshooting[Troubleshooting] for more informatio
 
 == Enable OAuth for client applications in OpenShift
 
-Once the authorization is enabled at Kafka level, client applications cannot access to Kafka in an anonymous way, even if the connection comes from an internal listener.
+Once the authorization is enabled at Kafka level, client applications cannot access to Kafka in an anonymous way, even if the connection comes from an internal listener. For such a reason, make sure that authentication is enabled on all your listeners.
 
-=== Add authentication to the internal listener
-
-Edit the Kafka listener section and add the following configuration:
-
-[source,yaml]
-----
-      - name: tls
-        port: 9093
-        type: internal
-        tls: true
-        authentication:
-          type: oauth 
-          validIssuerUri: https://${KEYCLOAK_ROUTE}/auth/realms/kafka
-          jwksEndpointUri: https://${KEYCLOAK_ROUTE}/auth/realms/kafka/protocol/openid-connect/certs
-          checkIssuer: true
-          checkAccessTokenType: true
-          accessTokenIsJwt: true
-          enableOauthBearer: true
-          maxSecondsWithoutReauthentication: 3600 
-          tlsTrustedCertificates: 
-          - secretName: oauth-server-cert
-            certificate: ca.crt
-          disableTlsHostnameVerification: true 
-----
-
-TIP: You can copy and paste from the `external` listener the authentication properties
-
-=== Add authentication to the application running on OpenShift
+WARNING: the following procedure is designed to work with a self signed Keycloak certificate.
 
 Create a secret to hold the trust stores:
 
@@ -436,7 +425,7 @@ In order to update the OpenShift application deployment there are two options:
 . Update the image building process via quarkus-openshift extension
 . Update the existing deployment configurations
 
-==== Update the image building process
+=== Update the image building process
 
 Edit the _configmap_ in `kafka-consumer/src/main/kubernetes/openshift.yml` using the values from the following command:
 
@@ -464,7 +453,7 @@ mvn -f kafka-consumer/pom.xml package -Dquarkus.kubernetes.deploy=true -DskipTes
 
 Repeat the above procedure for the _producer_ application, but replace the client id and secrets accordingly.
 
-==== Update the existing deployment configuration
+=== Update the existing deployment configuration
 
 The below instructions assume that the client applications are correctly functioning without authentication.
 
@@ -558,7 +547,16 @@ Edit the config map `oc edit configmap kafka-consumer-config` adding the followi
   KAFKA_SECURITY_PROTOCOL: SASL_PLAINTEXT
 ----
 
-=== Clean up keycloak
+=== Clean up
+
+Delete Kafka configurations:
+
+[source,shell]
+----
+oc delete secret oauth-server-cert
+----
+
+Delete Keycloak configurations:
 
 [source,shell]
 ----
