@@ -194,3 +194,16 @@ Replace `<PASSWORD>` with the outcomes of: `oc get secret my-user -o jsonpath='{
 oc scale deployment/kafka-producer --replicas=1
 oc logs --tail=20 -f --selector="app.kubernetes.io/name=kafka-producer"
 ----
+
+== Clean up
+
+[source,shell]
+----
+oc scale deployment/kafka-producer --replicas=0
+oc apply -f k8s/01-kafka-metrics.yaml
+oc delete kafkauser my-user
+oc delete configmap kafka-consumer-config
+oc apply --force -f kafka-consumer/src/main/kubernetes/openshift.yml
+oc delete configmap kafka-producer-config
+oc apply --force -f kafka-producer/src/main/kubernetes/openshift.yml
+----
