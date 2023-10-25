@@ -302,6 +302,29 @@ curl -X GET 'https://'$KEYCLOAK_ROUTE'/auth/realms/kafka/protocol/openid-connect
   --silent | jq -r '.sub'
 ----
 
+== Troubleshooting
+
+When on the client side you get an error id, e.g.:
+
+```
+2023-06-06 17:50:29,556 DEBUG Runtime failure during token validation (ErrId: 5cbf1e54)
+```
+
+You can search that id in the server log to gather further insights.
+
+To raise the log verbosity, use the following configuration:
+
+```yaml
+spec:
+  kafka:
+    logging:
+      type: inline
+      loggers:
+        log4j.logger.io.strimzi: DEBUG
+        log4j.logger.kafka: INFO
+        log4j.logger.org.apache.kafka: INFO
+```
+
 == Username claim
 
 It's possible to pass the client id (a meaningful username) during the authentication phase:
