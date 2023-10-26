@@ -406,4 +406,22 @@ If the Keycloak definitions are correct, you can execute the local consumer and 
 
 If you get an authorization exception on the client side, you can enable the logging in Kafka to investigate the OAuth behavior.
 
-See xref:../docs/clean.adoc#Troubleshooting[Troubleshooting] for more information.
+See xref:../docs/keycloak-integration-appx.adoc#Troubleshooting[Troubleshooting].
+
+== Further Information
+
+For more information and troubleshooting tips, see the
+../docs/keycloak-integration-appx.adoc[Appendix]
+
+== Clean up
+
+Remove authentication and authorization from the cluster definition or replace the entire configuration with the original.
+
+Reset application configuration:
+
+[source,shell]
+----
+oc replace -f kafka-consumer/src/main/kubernetes/openshift.yml
+oc replace -f kafka-producer/src/main/kubernetes/openshift.yml
+----
+
