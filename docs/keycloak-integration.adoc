@@ -167,12 +167,6 @@ Run the producer to check it's working as expected:
 mvn -f kafka-producer/pom.xml clean quarkus:dev
 ----
 
-== Kafka Authorization
-
-In this section, it will be enabled the Kafka authorization and the SSO will be used to retrieve the permission. The following picture shows the interactions between the parties:
-
-image:images/keycloak-kafka-authz.png[]
-
 == Enable OAuth for client applications in OpenShift
 
 Once the authorization is enabled at Kafka level, client applications cannot access to Kafka in an anonymous way, even if the connection comes from an internal listener. For such a reason, make sure that authentication is enabled on all your listeners.
@@ -204,6 +198,12 @@ Add the outcome of the previous command to the consumer _configmap_:
 ----
 oc edit configmap kafka-producer-config
 ----
+
+== Kafka Authorization
+
+In this section, it will be enabled the Kafka authorization and the SSO will be used to retrieve the permission. The following picture shows the interactions between the parties:
+
+image:images/keycloak-kafka-authz.png[]
 
 === Kafka Authorization model
 
