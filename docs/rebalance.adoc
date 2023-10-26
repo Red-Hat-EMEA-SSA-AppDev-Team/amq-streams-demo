@@ -12,7 +12,8 @@ Add Cruise Control to the cluster configuration:
 
 [source,shell]
 ----
-oc patch kafka my-cluster --patch '{"spec":{"cruiseControl": {}}}' --type=merge
+oc apply -f k8s/rebalance/01-cruise-control-metrics.yaml
+oc patch kafka my-cluster --patch '{"spec":{"cruiseControl": {"metricsConfig":{"type":"jmxPrometheusExporter","valueFrom":{"configMapKeyRef":{"key":"metrics-config.yml","name":"cruise-control-metrics"}}}}}}' --type=merge
 ----
 
 == Simulate an unbalanced workload
@@ -64,7 +65,7 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-run-class.sh kafka.tools.GetOffsetSh
 +
 [source,shell]
 ----
-oc apply -f k8s/10-kafka-rebalance-full.yaml
+oc apply -f k8s/rebalance/02-kafka-rebalance-full.yaml
 ----
 
 . Review the optimization proposal:
@@ -164,7 +165,7 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
 +
 [source,shell]
 ----
-oc apply -f k8s/11-kafka-rebalance-add-brokers.yaml
+oc apply -f k8s/rebalance/03-kafka-rebalance-add-brokers.yaml
 ----
 
 . Preparing an optimization proposal could take a couple of minutes, check the progress through the following command:
