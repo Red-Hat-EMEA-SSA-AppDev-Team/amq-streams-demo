@@ -411,7 +411,7 @@ See xref:../docs/keycloak-integration-appx.adoc#Troubleshooting[Troubleshooting]
 == Further Information
 
 For more information and troubleshooting tips, see the
-../docs/keycloak-integration-appx.adoc[Appendix]
+xref:../docs/keycloak-integration-appx.adoc[Appendix].
 
 == Clean up
 
