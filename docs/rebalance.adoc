@@ -91,12 +91,19 @@ oc annotate kafkarebalances.kafka.strimzi.io full-rebalance strimzi.io/rebalance
 ----
 ====
 
-. Rebalancing takes some time, run again the following command and wait for `Status: True`
+. Rebalancing takes some time, you can check the progress through the following command:
 +
 [source,shell]
 ----
-oc describe kafkarebalance full-rebalance
+oc get kafkarebalance full-rebalance
 ----
++
+----
+NAME             CLUSTER      PENDINGPROPOSAL   PROPOSALREADY   REBALANCING   READY   NOTREADY
+full-rebalance   my-cluster                                     True  
+----
++
+Rebalancing is complete when the `READY` column displays `True`.
 
 == Analyze the optimization results
 
