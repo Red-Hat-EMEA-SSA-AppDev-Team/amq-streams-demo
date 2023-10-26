@@ -167,12 +167,26 @@ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh \
 oc apply -f k8s/11-kafka-rebalance-add-brokers.yaml
 ----
 
+. Preparing an optimization proposal could take a couple of minutes, check the progress through the following command:
++
+[source,shell]
+----
+oc get kafkarebalance add-brokers-rebalance
+----
++
+----
+NAME                    CLUSTER      PENDINGPROPOSAL   PROPOSALREADY   REBALANCING   READY   NOTREADY
+add-brokers-rebalance   my-cluster                     True                                  
+----
++
+A proposal is available when the `PENDINGPROPOSAL` column displays `True`.
+
 . Review and approve the optimization proposal:
 +
 [source,shell]
 ----
-oc describe kafkarebalance full-rebalance
-oc annotate kafkarebalances.kafka.strimzi.io full-rebalance strimzi.io/rebalance=approve
+oc describe kafkarebalance add-brokers-rebalance
+oc annotate kafkarebalances.kafka.strimzi.io add-brokers-rebalance strimzi.io/rebalance=approve
 ----
 
 . Rebalancing takes a couple of minutes, you can monitor the Grafana dashboard to see the changes and the topic information to understand how the partitions and their replicas are reorganized across the brokers.
