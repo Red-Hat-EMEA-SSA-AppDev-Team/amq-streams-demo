@@ -16,12 +16,15 @@ spec:
         type: internal
         tls: true
     readinessProbe:
-      initialDelaySeconds: 60
+      initialDelaySeconds: 50
+      failureThreshold: 10
+      periodSeconds: 5
       timeoutSeconds: 5
     livenessProbe:
-      initialDelaySeconds: 60
+      initialDelaySeconds: 50
+      failureThreshold: 10
+      periodSeconds: 10
       timeoutSeconds: 5
-      periodSeconds: 60
     config:
       default.replication.factor: 3
       min.insync.replicas: 2
