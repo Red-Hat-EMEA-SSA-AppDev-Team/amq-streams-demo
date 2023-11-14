@@ -32,6 +32,10 @@ spec:
       transaction.state.log.replication.factor: 3
       transaction.state.log.min.isr: 2
       inter.broker.protocol.version: "3.5"
+      log.cleaner.delete.retention.ms: 0
+      log.retention.bytes: 1073741824
+      log.segment.bytes: 268435456
+      log.segment.delete.delay.ms: 0
     storage:
       type: jbod
       volumes:
