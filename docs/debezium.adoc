@@ -102,3 +102,42 @@ Status:
   Topics:
     debezium.public.customers
 ----
+
+== Check the Debezium results
+
+If everything works as expected, the `debezium.public.customers' topic should contain the information from the `customers' table in the Postgres DB.
+
+The following command dump the topic content:
+
+[source,console]
+----
+oc exec -n my-kafka -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh \
+        --bootstrap-server my-cluster-kafka-bootstrap:9092 \
+        --topic debezium.public.customers --from-beginning
+----
+
+In order to see the new messages flowing in real time, open a new terminal and insert a new record in the table:
+
+[source,console]
+----
+oc rsh $PGPOD
+sh-4.4$ psql
+psql (15.3)
+Type "help" for help.
+
+postgres=# \connect debezium;
+You are now connected to database "debezium" as user "postgres".
+debezium=# INSERT INTO customers (name, email)
+debezium-# VALUES ('Donato Marrazzo', 'donato@example.com');
+----
+
+== Clean up
+
+To remove everithing:
+
+[source,console]
+----
+oc delete project debezium
+oc project my-kafka
+oc delete kt dbz-connect-configs dbz-connect-offsets dbz-connect-status debezium.public.customers
+----
