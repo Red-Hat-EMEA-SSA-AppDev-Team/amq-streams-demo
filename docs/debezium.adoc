@@ -1,0 +1,40 @@
+= Red Hat build of Debezium
+
+Debezium is a distributed platform for capturing changes in database tables and delivering them to downstream systems in real time. It is built on top of Apache Kafka and uses Kafka Connect to connect to databases and stream change data to Kafka topics. Debezium is a popular choice for implementing data pipelines and microservices architectures.
+
+Here's a summary of Debezium's key features:
+
+1. **Real-time data capture:** Debezium captures changes in database tables as they occur, enabling real-time data processing and analysis.
+
+2. **Change data capture (CDC):** Debezium provides CDC functionality, allowing you to track the full history of changes in your database tables.
+
+3. **Kafka integration:** Debezium uses Kafka Connect to stream change data to Kafka topics, making it easy to integrate with Kafka-based systems.
+
+4. **Database support:** Debezium supports a wide range of databases: Db2 (Linux only), MongoDB, MySQL, Oracle Database (LogMiner), PostgreSQL, SQL Server (including Azure SQL DB).
+
+5. **Scalability:** Debezium is horizontally scalable, allowing you to handle increasing data volumes by adding more Debezium servers.
+
+See more at the https://access.redhat.com/documentation/en-us/red_hat_build_of_debezium[official documentation page].
+
+Learn about prerequisites at https://access.redhat.com/articles/4938181[Debezium Supported Configurations]
+
+== Installation
+
+Create the Debezium project:
+
+[source,console]
+----
+oc new-project debezium
+----
+
+=== PostgreSQL
+
+The following deployment uses the standard PostgreSQL 15 image available in the https://catalog.redhat.com/:[Red Hat Catalog].
+
+In the configuration is extended to add the **write-ahead log**.
+
+[source,console]
+----
+oc create configmap postgres-conf --from-file k8s/debezium/postgres.conf
+oc apply -f k8s/debezium/01-postgres.yaml
+----
