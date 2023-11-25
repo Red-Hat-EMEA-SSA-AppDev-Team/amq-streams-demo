@@ -120,20 +120,22 @@ In order to see the new messages flowing in real time, open a new terminal and i
 
 [source,console]
 ----
-oc rsh $PGPOD
-sh-4.4$ psql
-psql (15.3)
-Type "help" for help.
+set -x PGPOD (oc get pod -l app=postgres -ojsonpath='{.items[0].metadata.name}')
+oc exec -it $PGPOD -- psql
+----
 
-postgres=# \connect debezium;
-You are now connected to database "debezium" as user "postgres".
-debezium=# INSERT INTO customers (name, email)
-debezium-# VALUES ('Donato Marrazzo', 'donato@example.com');
+On the `psql` command prompt, issue:
+
+[source,sql]
+----
+\connect debezium;
+INSERT INTO customers (name, email) VALUES ('Donato Marrazzo', 'donato@example.com');
+exit
 ----
 
 == Clean up
 
-To remove everithing:
+To remove everything:
 
 [source,console]
 ----
