@@ -9,19 +9,7 @@ data:
   POSTGRESQL_DATABASE: ZGViZXppdW0=
   POSTGRESQL_USER: ZGViZXppdW0=
   POSTGRESQL_PASSWORD: ZGViZXppdW0=
----
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: postgres-pvc
-#   labels:
-#     application: postgres
-# spec:
-#   accessModes:
-#   - ReadWriteOnce
-#   resources:
-#     requests:
-#       storage: 100Mi
+  POSTGRESQL_ADMIN_PASSWORD: ZGViZXppdW0=
 ---
 apiVersion: apps/v1
 kind: Deployment

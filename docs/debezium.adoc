@@ -20,7 +20,7 @@ Learn about prerequisites at https://access.redhat.com/articles/4938181[Debezium
 
 == Installation
 
-Create the Debezium project:
+Let's create a new project to include the Postgres DB and the Debezium instance:
 
 [source,console]
 ----
@@ -37,4 +37,68 @@ In the configuration is extended to add the **write-ahead log**.
 ----
 oc create configmap postgres-conf --from-file k8s/debezium/postgres.conf
 oc apply -f k8s/debezium/01-postgres.yaml
+----
+
+The following commands will create a simple DB in Postgres:
+
+[source,console]
+----
+set -x PGPOD (oc get pod -l app=postgres -ojsonpath='{.items[0].metadata.name}')
+oc cp k8s/debezium/postgres-db-ddl.sql $PGPOD:/var/lib/pgsql/postgres-db-ddl.sql
+oc exec -it $PGPOD -- psql -f /var/lib/pgsql/postgres-db-ddl.sql
+----
+
+TIP: If you are using Bash set the environment variable in this way: `export PGPOD=$(oc get pod -l app=postgres -ojsonpath='{.items[0].metadata.name}')`
+
+=== Debezium
+
+At its core, Debezium is a Kafka connector deployed on a Kafka Connect distributed server.
+
+The following commands have a double effect:
+
+1. A Kafka Connect image containing the Debezium libraries
+2. Run Kafka Connect against this image 
+
+[source,console]
+----
+oc create imagestream debezium-streams-connect
+oc apply -f k8s/debezium/02-dbz-connect.yaml
+----
+
+To start the Debezium connector you have create the KafkaConnector resource with the following command:
+
+[source,console]
+----
+oc apply -f k8s/debezium/03-dbz-connector.yaml
+----
+
+Issue the following command to check that it's running:
+
+[source,console]
+----
+oc describe KafkaConnector dbz-sample-connector
+----
+
+You should see something similar:
+
+----
+Status:
+  Conditions:
+    Last Transition Time:  2023-11-25T14:45:44.792770738Z
+    Status:                True
+    Type:                  Ready
+  Connector Status:
+    Connector:
+      State:      RUNNING
+      worker_id:  10.128.1.190:8083
+    Name:         dbz-sample-connector
+    Tasks:
+      Id:               0
+      State:            RUNNING
+      worker_id:        10.128.1.190:8083
+    Type:               source
+  Observed Generation:  1
+  Tasks Max:            1
+  Topics:
+    debezium.public.customers
 ----
