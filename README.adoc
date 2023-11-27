@@ -14,4 +14,5 @@ The following modules were developed sequentially and often leverage previous co
 * xref:docs/access.adoc[Accessing Kafka outside of the OpenShift cluster]
 * xref:docs/keycloak-integration.adoc[Keycloak integration] (Optional)
 * xref:docs/registry.adoc[Apicurio Schema Registry] (Optional)
+* xref:docs/debezium.adoc [Debezium with Postgres] (Optional)
 * xref:docs/clean.adoc[Environment clean up and troubleshooting] (Optional)
