@@ -18,6 +18,11 @@ See more at the https://access.redhat.com/documentation/en-us/red_hat_build_of_d
 
 Learn about prerequisites at https://access.redhat.com/articles/4938181[Debezium Supported Configurations]
 
+== Demo Prerequisites
+
+* AMQ Streams Operator installed.
+* Install Kafka cluster in `my-kafka` namespace and follow the instructions in this paragraph xref:kafka.adoc#create-kafka-broker-and-topic[Create Kafka Broker].
+
 == Installation
 
 Let's create a new project to include the Postgres DB and the Debezium instance:
