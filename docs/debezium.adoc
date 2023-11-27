@@ -21,7 +21,7 @@ Learn about prerequisites at https://access.redhat.com/articles/4938181[Debezium
 == Demo Prerequisites
 
 * AMQ Streams Operator installed.
-* Install Kafka cluster in `my-kafka` namespace and follow the instructions in this paragraph xref:kafka.adoc#create-kafka-broker-and-topic[Create Kafka Broker].
+* Install Kafka cluster in `my-kafka` namespace following the instructions in this paragraph xref:kafka.adoc#create-kafka-broker-and-topic[Create Kafka Broker].
 
 == Installation
 
