@@ -34,7 +34,7 @@ The following commands:
 set -x KAFKA_ROUTE (oc get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="plain")].bootstrapServers}')
 set -x PROJECT_DOMAIN (oc project -q).(oc get ingresses.config/cluster -o jsonpath={.spec.domain})
 cat k8s/registry/01-registry.yaml | envsubst | oc apply -f -
-oc create route edge --service=registry --insecure-policy=Redirect
+oc create route edge --service=registry-service --insecure-policy=Redirect
 ----
 
 It's worth noting that the configuration includes the `host` property, which is used for CORS permissions in the registry web app.
