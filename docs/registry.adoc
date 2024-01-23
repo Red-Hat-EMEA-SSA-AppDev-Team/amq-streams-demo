@@ -43,6 +43,12 @@ It's worth noting that the configuration includes the `host` property, which is 
 
 NOTE: The following instructions assume that Keycloak has been installed in accordance with the other directions in this repository.
 
+In order to enable the authorization and the following definitions can be used to import in Keycloak the clients and roles expected by the Service Registry: link:../docs/sso-registry.json[]
+
+This will create 3 roles (sr-developer, sr-admin, sr-readonly) and 2 clients (registry-client-api, registry-client-ui).
+
+Using the keycloak console create 2 users: `sr-dev` and `sr-admin`.
+
 The following command update the previous registry deployment to enable the authentication through Keycloak:
 
 [source,shell]
@@ -50,10 +56,6 @@ The following command update the previous registry deployment to enable the auth
 set -x KEYCLOAK_ROUTE (oc get route keycloak -n keycloak -o jsonpath='{.spec.host}')
 oc patch apicurioregistry/registry --type=merge --patch-file=(cat k8s/registry/02-security.yaml | envsubst | psub)
 ----
-
-Optionally, you can enable the authorization and the following definitions can be used to import in Keycloak the clients and roles expected by the Service Registry: link:../docs/sso-registry.json[]
-
-This will create 3 roles (sr-developer, sr-admin, sr-readonly) and 2 clients (registry-client-api, registry-client-ui).
 
 == Register a schema
 

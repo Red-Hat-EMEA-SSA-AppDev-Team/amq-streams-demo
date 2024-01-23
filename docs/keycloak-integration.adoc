@@ -49,7 +49,7 @@ A **client** is an application or service that interacts with Keycloak for authe
 
 Clients can be of different types, including web applications, mobile applications, single-page applications (SPAs), and service accounts. Each client in Keycloak is assigned a unique client ID and can have its own set of configuration settings, security protocols, and access permissions.
 
-We need 2 clients one for the consumer application and anouther for the producer one:
+We need 2 clients one for the consumer application and another for the producer one:
 
 * client-id `kafka-consumer`
 * client-id `kafka-producer`
