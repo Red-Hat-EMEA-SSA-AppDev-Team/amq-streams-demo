@@ -3,4 +3,4 @@ kind: ServiceAccount
 metadata:
   name: grafana-serviceaccount
   labels:
-    app: strimzi
+    app: my-kafka-demo

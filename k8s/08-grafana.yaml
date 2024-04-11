@@ -5,6 +5,7 @@ metadata:
   name: grafana-pvc
   labels:
     application: kafka-monitor
+    app: my-kafka-demo
 spec:
   accessModes:
     - ReadWriteOnce
@@ -17,7 +18,7 @@ kind: Deployment
 metadata:
   name: grafana
   labels:
-    app: strimzi
+    app: my-kafka-demo
     application: kafka-monitor
 spec:
   replicas: 1
@@ -80,7 +81,7 @@ kind: Service
 metadata:
   name: grafana
   labels:
-    app: strimzi
+    app: my-kafka-demo
     application: kafka-monitor
 spec:
   ports:

@@ -4,6 +4,7 @@ metadata:
   name: event
   labels:
     strimzi.io/cluster: my-cluster
+    app: my-kafka-demo
   namespace: my-kafka
 spec:
   partitions: 12

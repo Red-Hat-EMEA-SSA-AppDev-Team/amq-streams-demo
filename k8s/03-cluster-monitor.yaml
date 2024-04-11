@@ -3,6 +3,8 @@ kind: ConfigMap
 metadata:
   name: cluster-monitoring-config
   namespace: openshift-monitoring
+  labels:
+    app: my-kafka-demo
 data:
   config.yaml: |
     enableUserWorkload: true
@@ -12,7 +14,7 @@ kind: ClusterRoleBinding
 metadata:
   name: grafana-cluster-monitoring-binding
   labels:
-    app: strimzi
+    app: my-kafka-demo
 subjects:
   - kind: ServiceAccount
     name: grafana-serviceaccount

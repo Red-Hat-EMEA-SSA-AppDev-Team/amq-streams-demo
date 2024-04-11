@@ -3,7 +3,7 @@ kind: PodMonitor
 metadata:
   name: cluster-operator-metrics
   labels:
-    app: strimzi
+    app: my-kafka-demo
 spec:
   selector:
     matchLabels:
@@ -20,7 +20,7 @@ kind: PodMonitor
 metadata:
   name: entity-operator-metrics
   labels:
-    app: strimzi
+    app: my-kafka-demo
 spec:
   selector:
     matchLabels:
@@ -37,7 +37,7 @@ kind: PodMonitor
 metadata:
   name: bridge-metrics
   labels:
-    app: strimzi
+    app: my-kafka-demo
 spec:
   selector:
     matchLabels:
@@ -54,7 +54,7 @@ kind: PodMonitor
 metadata:
   name: kafka-resources-metrics
   labels:
-    app: strimzi
+    app: my-kafka-demo
 spec:
   selector:
     matchExpressions:
