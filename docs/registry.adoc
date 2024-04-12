@@ -47,7 +47,7 @@ In order to enable the authorization and the following definitions can be used t
 
 This will create 3 roles (sr-developer, sr-admin, sr-readonly) and 2 clients (registry-client-api, registry-client-ui).
 
-Using the keycloak console create 2 users: `sr-dev` and `sr-admin`.
+Using the keycloak console create 2 users: `sr-dev` and `sr-admin` and assign the corresponding roles.
 
 The following command update the previous registry deployment to enable the authentication through Keycloak:
 
@@ -65,7 +65,10 @@ Upload the Avro schema available here:
 
 link:../kafka-registry/src/main/avro/movie.avsc[Movie Avro schema]
 
-Use the following ID: `movies-value`
+Register the schema the following values:
+
+* Group: `quarkus`
+* ID: `movies-value`
 
 IMPORTANT: The ID is then used by the client application to retrieve and validate the schema. 
 The convention for the schema ID is `<topic name>-value`. 
