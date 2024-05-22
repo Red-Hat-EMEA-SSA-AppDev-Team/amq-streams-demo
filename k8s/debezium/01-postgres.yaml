@@ -29,7 +29,7 @@ spec:
         app: postgres
     spec:
       containers:
-      - image: registry.redhat.io/rhel8/postgresql-15:1-39
+      - image: registry.redhat.io/rhel8/postgresql-15:1-66
         name: postgres     
         envFrom:
           - secretRef:
