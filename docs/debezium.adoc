@@ -36,7 +36,7 @@ oc new-project debezium
 
 The following deployment uses the standard PostgreSQL 15 image available in the https://catalog.redhat.com/:[Red Hat Catalog].
 
-In the configuration is extended to add the **write-ahead log**.
+A small tweak is required to enable the **write-ahead log**.
 
 [source,console]
 ----
