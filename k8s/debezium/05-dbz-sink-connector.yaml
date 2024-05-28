@@ -1,0 +1,22 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: dbz-sink-connector
+  labels:
+    strimzi.io/cluster: dbz-connect
+    application: debezium
+spec:
+  class: io.debezium.connector.jdbc.JdbcSinkConnector
+  tasksMax: 1
+  autoRestart:
+    enabled: true
+  config:
+    connection.url: "jdbc:mysql://mysql/mysqldbz"
+    connection.username: "mysqldbz"
+    connection.password: "mysqldbz"
+    delete.enabled: "false"
+    insert.mode: "upsert"
+    primary.key.mode: record_key
+    schema.evolution: "basic"
+    database.time_zone: "UTC"
+    topics: "outbox.public.shipping"

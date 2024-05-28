@@ -1,7 +1,7 @@
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnector
 metadata:
-  name: dbz-sample-connector  
+  name: dbz-pg-source-connector  
   labels:
     strimzi.io/cluster: dbz-connect
     application: debezium
@@ -14,6 +14,7 @@ spec:
     database.user: postgres
     database.password: debezium
     plugin.name: pgoutput
-    topic.prefix: debezium
+    topic.prefix: outbox
     schema.include.list: public
+    table.include.list: "public.shipping"
   tasksMax: 1

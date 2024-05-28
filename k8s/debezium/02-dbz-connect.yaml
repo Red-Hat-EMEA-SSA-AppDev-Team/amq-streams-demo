@@ -31,6 +31,8 @@ spec:
           - type: zip
             url: https://maven.repository.redhat.com/ga/io/debezium/debezium-connector-postgres/2.5.4.Final-redhat-00001/debezium-connector-postgres-2.5.4.Final-redhat-00001-plugin.zip
           - type: zip
+            url: https://maven.repository.redhat.com/ga/io/debezium/debezium-connector-jdbc/2.5.4.Final-redhat-00001/debezium-connector-jdbc-2.5.4.Final-redhat-00001-plugin.zip
+          - type: zip
             url: https://maven.repository.redhat.com/ga/io/debezium/debezium-scripting/2.5.4.Final-redhat-00001/debezium-scripting-2.5.4.Final-redhat-00001.zip
           - type: zip
             url: https://maven.repository.redhat.com/ga/io/apicurio/apicurio-registry-distro-connect-converter/2.5.9.Final-redhat-00001/apicurio-registry-distro-connect-converter-2.5.9.Final-redhat-00001.zip

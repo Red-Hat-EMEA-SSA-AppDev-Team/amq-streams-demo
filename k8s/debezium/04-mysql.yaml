@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-credentials
+  labels:
+    application: mysql
+type: opaque
+data:
+  MYSQL_DATABASE: bXlzcWxkYno=
+  MYSQL_USER: bXlzcWxkYno=
+  MYSQL_PASSWORD: bXlzcWxkYno=
+  MYSQL_ROOT_PASSWORD: bXlzcWxkYno=
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    application: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - image: registry.redhat.io/rhel9/mysql-80:latest
+        name: mysql     
+        envFrom:
+          - secretRef:
+              name: mysql-credentials
+        ports:
+        - containerPort: 3306
+          name: mysql 
+        livenessProbe:
+          initialDelaySeconds: 30
+          timeoutSeconds: 1
+          exec:
+            command:
+              - "/bin/sh"
+              - "-i"
+              - "-c"
+              - "MYSQL_PWD=\"$MYSQL_PASSWORD\" mysqladmin -u $MYSQL_USER ping"
+        readinessProbe:
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+          exec:
+            command:
+              - "/bin/sh"
+              - "-i"
+              - "-c"
+              - "MYSQL_PWD=\"$MYSQL_PASSWORD\" mysqladmin -u $MYSQL_USER ping"
+        terminationMessagePolicy: File
+        terminationMessagePath: /dev/termination-log
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  labels:
+    application: mysql
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mysql
+  clusterIP: None

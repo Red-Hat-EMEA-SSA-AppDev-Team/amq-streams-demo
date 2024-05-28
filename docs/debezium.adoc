@@ -14,7 +14,7 @@ Here's a summary of Debezium's key features:
 
 5. **Scalability:** Debezium is horizontally scalable, allowing you to handle increasing data volumes by adding more Debezium servers.
 
-See more at the https://access.redhat.com/documentation/en-us/red_hat_build_of_debezium[official documentation page].
+See more at the hevent-db-init-datattps://access.redhat.com/documentation/en-us/red_hat_build_of_debezium[official documentation page].
 
 Learn about prerequisites at https://access.redhat.com/articles/4938181[Debezium Supported Configurations]
 
@@ -70,7 +70,7 @@ oc create imagestream debezium-streams-connect
 oc apply -f k8s/debezium/02-dbz-connect.yaml
 ----
 
-To start the Debezium connector you have create the KafkaConnector resource with the following command:
+To start the Debezium connector you have create the `KafkaConnector` resource with the following command:
 
 [source,console]
 ----
@@ -81,7 +81,7 @@ Issue the following command to check that it's running:
 
 [source,console]
 ----
-oc describe KafkaConnector dbz-sample-connector
+oc describe KafkaConnector dbz-pg-source-connector
 ----
 
 You should see something similar:
@@ -96,7 +96,7 @@ Status:
     Connector:
       State:      RUNNING
       worker_id:  10.128.1.190:8083
-    Name:         dbz-sample-connector
+    Name:         dbz-pg-source-connector
     Tasks:
       Id:               0
       State:            RUNNING
@@ -105,12 +105,12 @@ Status:
   Observed Generation:  1
   Tasks Max:            1
   Topics:
-    debezium.public.customers
+    outbox.public.shipping
 ----
 
 == Check the Debezium results
 
-If everything works as expected, the `debezium.public.customers' topic should contain the information from the `customers' table in the Postgres DB.
+If everything works as expected, the `outbox.public.shipping' topic should contain the information from the `shipping' table in the Postgres DB.
 
 The following command dump the topic content:
 
@@ -118,7 +118,7 @@ The following command dump the topic content:
 ----
 oc exec -n my-kafka -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh \
         --bootstrap-server my-cluster-kafka-bootstrap:9092 \
-        --topic debezium.public.customers --from-beginning
+        --topic outbox.public.shipping --from-beginning
 ----
 
 In order to see the new messages flowing in real time, open a new terminal and insert a new record in the table:
@@ -134,8 +134,51 @@ On the `psql` command prompt, issue:
 [source,sql]
 ----
 \connect debezium;
-INSERT INTO customers (name, email) VALUES ('Donato Marrazzo', 'donato@example.com');
+INSERT INTO shipping VALUES (101, 'Premium','Pine Avenue');
 exit
+----
+
+== JDBC Sink Connector
+
+Debezium's JDBC sink connector listens to Kafka topics containing database changes, translates them into SQL statements, and applies them to another relational database using a JDBC driver. This allows you to keep multiple databases in sync with your main database.
+
+=== MySQL DB
+
+The following deployment uses the standard MySQL 8 image available in the https://catalog.redhat.com/:[Red Hat Catalog].
+
+[source,console]
+----
+oc apply -f k8s/debezium/04-mysql.yaml
+----
+
+=== Connector deployment
+
+For sake of simplicity, the sink connector will be deployed in the same Kafka connect used by the source connector:
+
+[source,console]
+----
+oc apply -f k8s/debezium/05-dbz-sink-connector.yaml
+----
+
+=== Check the replicated data on the target db
+
+Open a shell in mysql container:
+
+[source,console]
+----
+set -x MYSQLPOD (oc get pod -l app=mysql -ojsonpath='{.items[0].metadata.name}')
+oc rsh $MYSQLPOD
+----
+
+TIP: If you are using Bash set the environment variable in this way: `export MYSQLPOD=$(oc get pod -l app=postgres -ojsonpath='{.items[0].metadata.name}')`
+
+Launch the MySQL client and explore the table:
+
+[source,console]
+----
+mysql -u$MYSQL_USER -p$MYSQL_PASSWORD
+use mysqldbz;
+select * from outbox_public_shipping;
 ----
 
 == Clean up
@@ -146,5 +189,5 @@ To remove everything:
 ----
 oc delete project debezium
 oc project my-kafka
-oc delete kt dbz-connect-configs dbz-connect-offsets dbz-connect-status debezium.public.customers
+oc delete kt dbz-connect-configs dbz-connect-offsets dbz-connect-status outbox.public.shipping
 ----
