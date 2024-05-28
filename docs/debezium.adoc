@@ -14,7 +14,7 @@ Here's a summary of Debezium's key features:
 
 5. **Scalability:** Debezium is horizontally scalable, allowing you to handle increasing data volumes by adding more Debezium servers.
 
-See more at the hevent-db-init-datattps://access.redhat.com/documentation/en-us/red_hat_build_of_debezium[official documentation page].
+See more at the https://access.redhat.com/documentation/en-us/red_hat_build_of_debezium[official documentation page].
 
 Learn about prerequisites at https://access.redhat.com/articles/4938181[Debezium Supported Configurations]
 
