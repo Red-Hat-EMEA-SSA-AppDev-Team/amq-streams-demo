@@ -181,6 +181,49 @@ use mysqldbz;
 select * from outbox_public_shipping;
 ----
 
+== Transactional Outbox pattern
+
+The outbox pattern solves the problem of updating a table and sending a message to a message broker in an atomic fashion and it's not possible to rely on the two-phase commit technology.
+
+See more details in this article:
+https://microservices.io/patterns/data/transactional-outbox.html[Transactional Outbox].
+
+Debezium is the perfect companion for implementing the _Transaction Outbox_ pattern. 
+
+To see this in practice, update the payment table and the shipping with an atomic transaction.
+Monitoring the kafka topic, you will notice that the message is sent only after the `commit` command.
+
+If you have closed the console consumer open it again in its own console:
+
+[source,console]
+----
+oc exec -n my-kafka -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh \
+        --bootstrap-server my-cluster-kafka-bootstrap:9092 \
+        --topic outbox.public.shipping --from-beginning
+----
+
+Open the postgres client:
+
+[source,console]
+----
+set -x PGPOD (oc get pod -l app=postgres -ojsonpath='{.items[0].metadata.name}')
+oc exec -it $PGPOD -- psql
+----
+
+Issue the following SQL commands, but wait a few seconds after the _inserts_ to ensure that Debezium does not publish until after the _commit_ statement:
+
+[source,sql]
+----
+\connect debezium;
+BEGIN;
+INSERT INTO payments ( order_id, payment_method, transaction_id, payment_amount, payment_status) 
+VALUES (102, 'Credit Card', 'tx12345', 37.50, 'CONFIRMED');
+INSERT INTO shipping 
+VALUES (102, 'Standard', 'Maple Street');
+COMMIT;
+exit
+----
+
 == Clean up
 
 To remove everything:
