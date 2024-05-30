@@ -7,6 +7,7 @@ import com.redhat.demo.model.KafkaState;
 
 import io.quarkus.arc.lookup.LookupIfProperty;
 import io.quarkus.hibernate.reactive.panache.Panache;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
@@ -18,6 +19,7 @@ public class DBTracking implements TrackingService {
 
     @Override
     @ActivateRequestContext
+    @WithTransaction
     public Uni<Void> track(ConsumerRecord<Long, String> record) {
         System.out.println("DBTracking.track() - key: " + record.key());
         
