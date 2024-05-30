@@ -53,7 +53,7 @@ Kafka consumer application requires the following supporting services:
 Quarkus can start those services leveraging the [Dev Services](https://quarkus.io/guides/dev-services).
 However, in order to test the application failure without dropping the the backend services, it's better to start these services outside of Quarkus.
 
-1. Dev services should be already disabled in `application.properties`:
+1. Dev services must be disabled in `application.properties`:
 
    ```
    quarkus.devservices.enabled=false
