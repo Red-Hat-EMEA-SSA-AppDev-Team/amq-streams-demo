@@ -17,6 +17,7 @@ metadata:
   name: mysql
   labels:
     application: mysql
+    app.openshift.io/runtime: mysql-database
 spec:
   selector:
     matchLabels:

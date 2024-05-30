@@ -17,6 +17,7 @@ metadata:
   name: postgres
   labels:
     application: postgres
+    app.openshift.io/runtime: postgresql
 spec:
   selector:
     matchLabels:
