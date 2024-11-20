@@ -2,9 +2,9 @@
 
 The goal of this demo is to show some of the key capabilities of Red Hat Streams for Apache Kafka.
 
-NOTE: *Red Hat Streams for Apache Kafka* was formerly known as Red Hat AMQ Streams.
+*Red Hat Streams for Apache Kafka* footnote:[https://access.redhat.com/products/streams-for-apache-kafka] is the Red Hat distribution of Apache Kafka and Strimzi projects footnote:[https://strimzi.io/]. One of the key feature is to simplify the configuration and management of _Apache Kafka_ in *OpenShift Container Platform*.
 
-*Red Hat Streams for Apache Kafka* footnote:[https://access.redhat.com/products/streams-for-apache-kafka] simplify the configuration and management of _Apache Kafka_ in *OpenShift Container Platform*, leveraging the Strimzi project.footnote:[https://strimzi.io/]
+NOTE: _Red Hat Streams for Apache Kafka_ was formerly known as _Red Hat AMQ Streams_.
 
 == Modules
 
