@@ -12,8 +12,9 @@ Create a Broker with metrics enabled:
 [source,ruby]
 ----
 oc new-project my-kafka
-oc apply -f k8s/01-kafka-metrics.yaml
-oc apply -f k8s/02-kafkatopic.yaml
+oc apply -f k8s/basics/01-metrics-configmap.yaml
+oc apply -f k8s/basics/02-kafka.yaml
+oc apply -f k8s/basics/03-kafkatopic.yaml
 ----
 
 == Enabling user workload monitoring
@@ -60,12 +61,11 @@ The following script:
 k8s/07-create-datasource.sh
 ----
 
-*Deploy* Grafana and expose it:
+Expose grafana:
 
 [source,shell]
 ----
-oc apply -f k8s/08-grafana.yaml
-oc create route edge --service=grafana --namespace=my-kafka
+oc create route edge --service=grafana
 ----
 
 
