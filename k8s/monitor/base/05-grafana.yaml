@@ -8,7 +8,7 @@ metadata:
     app: my-kafka-demo
 spec:
   accessModes:
-    - ReadWriteOnce
+  - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
@@ -33,10 +33,10 @@ spec:
       serviceAccountName: grafana-serviceaccount
       containers:
       - name: grafana
-        image: grafana/grafana:9.3.1
+        image: grafana/grafana:11.2.0
         securityContext:
           capabilities:
-            drop: ["ALL"]
+            drop: [ "ALL" ]
           runAsNonRoot: true
           allowPrivilegeEscalation: false
           seccompProfile:
