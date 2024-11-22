@@ -5,8 +5,8 @@ metadata:
   labels:
     app.kubernetes.io/name: kafka-producer
 data:
-  KAFKA_BOOTSTRAP_SERVERS: my-cluster-kafka-bootstrap.my-kafka.svc:9092
-  POSTGRESQL_SVC: "event-db.my-kafka.svc:5432"
+  KAFKA_BOOTSTRAP_SERVERS: my-cluster-kafka-bootstrap:9092
+  POSTGRESQL_SVC: "event-db:5432"
   PRODUCER_TICK_FREQUENCY: "100"
   PRODUCER_PARTED: "false"
   PRODUCER_PARTITIONS: "0,3"
