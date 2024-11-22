@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+
+- ./base/01-cluster-monitor.yaml
+- ./base/02-pod-monitor.yaml
+- ./base/03-prometheus-rules.yaml
+- ./base/04-graphana-auth.yaml
+- ./base/05-grafana.yaml
+
+commonLabels:
+  app: my-kafka-demo
+
+patches:
+- target:
+    group: monitoring.coreos.com
+    version: v1
+    kind: PodMonitor
+  path: podmonitor.patch.yaml
+- target:
+    group: rbac.authorization.k8s.io
+    version: v1
+    kind: ClusterRoleBinding
+  path: clusterrolebinding.patch.yaml
