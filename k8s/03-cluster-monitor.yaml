@@ -16,8 +16,9 @@ metadata:
   labels:
     app: my-kafka-demo
 subjects:
-  - kind: ServiceAccount
-    name: grafana-serviceaccount
+- kind: ServiceAccount
+  name: grafana-serviceaccount
+  namespace: my-kafka
 roleRef:
   kind: ClusterRole
   name: cluster-monitoring-view
