@@ -67,6 +67,10 @@ spec:
       transaction.state.log.min.isr: 2
       default.replication.factor: 3
       min.insync.replicas: 2
+      log.cleaner.delete.retention.ms: 0
+      log.retention.bytes: 1073741824
+      log.segment.bytes: 268435456
+      log.segment.delete.delay.ms: 0
     metricsConfig:
       type: jmxPrometheusExporter
       valueFrom:
