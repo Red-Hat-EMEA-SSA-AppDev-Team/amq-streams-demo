@@ -18,13 +18,16 @@ public class KafkaProducer {
     @ConfigProperty(name = "producer.tick-frequency", defaultValue = "1000")
     private Long tickFrequency;
 
+    @ConfigProperty(name = "producer.overflow-buffer", defaultValue = "1000")
+    private int overflowBuffer;
+
     @Inject
     Instance<RecordGenerator> generator;
 
     @Outgoing("event-out")
     public Multi<KafkaRecord<Long, String>> generate() {
         return Multi.createFrom().ticks().every(Duration.ofMillis(tickFrequency))
-                .onOverflow().buffer(1000)
+                .onOverflow().buffer(overflowBuffer)
                 .onOverflow()
                     .invoke(tick -> System.out.println("buffer overflow tick: " + tick))
                     .drop()
