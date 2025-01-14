@@ -74,13 +74,14 @@ The following picture shows the authentication flow when the set up is completed
 
 image:images/keycloak-kafka-authentication.png[]
 
-Switch on the kafka project and keep the Keycloak endpoint in a convenient environment variable:
+Set `KEYCLOAK_ROUTE` with the Keycloak endpoint:
 
 [source,shell]
 ----
-oc project my-kafka
 set -x KEYCLOAK_ROUTE (oc get route keycloak -n keycloak -o jsonpath='{.spec.host}')
 ----
+
+Switch on the Kafka project, e.g. `oc project my-kafka`.
 
 The following command adds a new Kafka listener that allows access to applications that bring the JWT token issued by keycloak:
 
