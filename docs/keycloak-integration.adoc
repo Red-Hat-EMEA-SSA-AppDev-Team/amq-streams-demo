@@ -83,7 +83,7 @@ set -x KEYCLOAK_ROUTE (oc get route keycloak -n keycloak -o jsonpath='{.spec.hos
 
 Switch on the Kafka project, e.g. `oc project my-kafka`.
 
-The following command adds a new Kafka listener that allows access to applications that bring the JWT token issued by keycloak:
+The following command replaces existing Kafka listeners and creates 2 new ones (internal and external endpoints) that use Keycloak to authenticate clients via JWT token:
 
 [source,shell]
 ----
@@ -116,7 +116,17 @@ spec:
 
 == Client side configuration
 
-In this section, you will configure the *kafka consumer* in your local environment to connect to the remote Kafka server using the OAuth authentication mechanism:
+In this section, you will configure the *kafka consumer* in your local environment to connect to the remote Kafka server using the OAuth authentication mechanism.
+
+Add Kafka OAuth plugin to your client dependecies `pom.xml` (already present in this project):
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.strimzi</groupId>
+  <artifactId>kafka-oauth-client</artifactId>
+</dependency>
+----
 
 The client application needs to enstablish 2 TLS connections: one to Keycloak and one to Kafka.
 In this example, the Kafka endpoints uses a self signed CA, so we create a truststores to support it:
@@ -127,45 +137,29 @@ oc get kafka my-cluster -o=jsonpath='{.status.listeners[?(@.name=="external")].c
 keytool -import -trustcacerts -alias root -file kafka-cluster-ca.crt -keystore truststore.jks -storepass password -noprompt
 ----
 
-Add application properties to enable the OAUTHBEARER authentication:
+Add application properties to enable the OAUTHBEARER authentication in both consumer and producer:
 
 [source,shell]
 ----
 set -x KAFKA_ROUTE (oc get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="external")].bootstrapServers}')
 echo | cat - k8s/keycloak/06-application.properties | envsubst >> kafka-consumer/src/main/resources/application.properties
+echo | cat - k8s/keycloak/06-application.properties | envsubst | sed 's/consumer/producer/g' >> kafka-producer/src/main/resources/application.properties
 ----
 
-Update the password in `application.properties` to match the secret in the Keycloak web console.
-
-Make sure that OAuth dependecy is present in `pom.xml`
-
-[source,xml]
-----
-<dependency>
-  <groupId>io.strimzi</groupId>
-  <artifactId>kafka-oauth-client</artifactId>
-</dependency>
-----
+Make sure that the password in `application.properties` match the secret in the Keycloak client credentials.
 
 Run the kafka consumer:
 
 [source,shell]
 ----
-mvn -f kafka-consumer/pom.xml clean quarkus:dev
-----
-
-The following command adds the OAuth configuration to the producer using the respective `kafka-producer` user.
-
-[source,shell]
-----
-echo | cat - k8s/keycloak/06-application.properties | envsubst | sed 's/consumer/producer/g' >> kafka-producer/src/main/resources/application.properties
+mvn -f kafka-consumer clean quarkus:dev
 ----
 
 Run the producer to check it's working as expected:
 
 [source,shell]
 ----
-mvn -f kafka-producer/pom.xml clean quarkus:dev
+mvn -f kafka-producer clean quarkus:dev
 ----
 
 == Enable OAuth for client applications in OpenShift
