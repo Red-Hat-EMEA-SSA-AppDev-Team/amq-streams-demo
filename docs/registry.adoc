@@ -29,10 +29,24 @@ The following commands:
 * Create a registry instance
 * Expose the service externally
 
+Set environment variables for bash:
+
+[source,shell]
+----
+export KAFKA_ROUTE=$(oc get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="plain")].bootstrapServers}')
+export PROJECT_DOMAIN=$(oc project -q).$(oc get ingresses.config/cluster -o jsonpath={.spec.domain})
+----
+
+Set environment variables for fish:
+
 [source,shell]
 ----
 set -x KAFKA_ROUTE (oc get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="plain")].bootstrapServers}')
 set -x PROJECT_DOMAIN (oc project -q).(oc get ingresses.config/cluster -o jsonpath={.spec.domain})
+----
+
+[source,shell]
+----
 cat k8s/registry/01-registry.yaml | envsubst | oc apply -f -
 oc create route edge --service=registry-service --insecure-policy=Redirect
 ----
@@ -50,6 +64,16 @@ This will create 3 roles (sr-developer, sr-admin, sr-readonly) and 2 clients (re
 Using the keycloak console create 2 users: `sr-dev` and `sr-admin` and assign the corresponding roles.
 
 The following command update the previous registry deployment to enable the authentication through Keycloak:
+
+Bash
+
+[source,shell]
+----
+export KEYCLOAK_ROUTE=$(oc get route keycloak -n keycloak -o jsonpath='{.spec.host}')
+oc patch apicurioregistry/registry --type=merge --patch-file="$(cat k8s/registry/02-security.yaml | envsubst)"
+----
+
+Fish:
 
 [source,shell]
 ----
@@ -108,6 +132,21 @@ keytool -import -trustcacerts -alias root -file kafka-cluster-ca.crt -keystore t
 ----
 
 Configure the environment variables:
+
+Bash:
+
+[#env-script]
+[source,shell]
+----
+export KAFKA_ROUTE=$(oc get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="tls")].bootstrapServers}')
+export KEYCLOAK_ROUTE=$(oc get route keycloak -n keycloak -o jsonpath='{.spec.host}')
+export SERVICE_REGISTRY_URL=$(oc get route registry-service -o jsonpath='{.spec.host}')
+export OAUTH_TOKEN_ENDPOINT=https://$KEYCLOAK_ROUTE/auth/realms/kafka/protocol/openid-connect/token
+export CLIENT_ID=kafka-producer
+export CLIENT_SECRET=kafka-producer-secret
+----
+
+Fish:
 
 [#env-script]
 [source,shell]
