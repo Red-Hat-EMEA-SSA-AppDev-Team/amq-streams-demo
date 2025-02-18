@@ -1,0 +1,36 @@
+= Console deployment
+
+**Streams for Apache Kafka** version **2.8** introduces a new user interface as known as **Kafka Console**.
+
+WARNING: It's a Technical Preview.
+
+== Installation
+
+Via _OperatorHub_, install the operator `Streams for Apache Kafka Console`.
+
+Make sure to select Manual update.
+
+Fish shell users can set the environment variables with the following commands:
+
+[source,shell]
+----
+set -x KAFKA_NAMESPACE (oc project -q)
+set -x CLUSTER_DOMAIN (oc get ingress.config.openshift.io/cluster -o jsonpath='{.spec.domain}')
+----
+
+Bash shell users can set the environment variables with the following commands:
+
+[source,shell]
+----
+export KAFKA_NAMESPACE=$(oc project -q)
+export CLUSTER_DOMAIN=$(oc get ingress.config.openshift.io/cluster -o jsonpath='{.spec.domain}')
+----
+
+Finally, create the console resource:
+
+[source,shell]
+----
+cat k8s/console/console.yaml | envsubst | oc apply -f -
+----
+
+Open it in the browser at the following URL: `kafka-console.${KAFKA_NAMESPACE}`

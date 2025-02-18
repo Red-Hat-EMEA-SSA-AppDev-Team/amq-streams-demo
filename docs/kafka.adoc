@@ -79,8 +79,8 @@ Load the dashboard definitions from `grafana-dashboards` folder:
 
 [source,shell]
 ----
-mvn -f kafka-consumer/pom.xml package -Dquarkus.kubernetes.deploy=true -DskipTests
-mvn -f kafka-producer/pom.xml package -Dquarkus.kubernetes.deploy=true -DskipTests
+mvn -f kafka-consumer package -Dquarkus.kubernetes.deploy=true -DskipTests
+mvn -f kafka-producer package -Dquarkus.kubernetes.deploy=true -DskipTests
 ----
 
 Further information about the applications:
@@ -111,7 +111,7 @@ oc logs -f deployments/kafka-producer
 +
 [source,shell]
 ----
-oc exec -it my-cluster-broker-0 -- \
+oc exec -it my-cluster-controller-3 -- \
     bin/kafka-topics.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 \
     --describe --topic event
 ----

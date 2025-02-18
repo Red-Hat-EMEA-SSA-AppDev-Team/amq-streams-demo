@@ -11,6 +11,7 @@ NOTE: _Red Hat Streams for Apache Kafka_ was formerly known as _Red Hat AMQ Stre
 The following modules were developed sequentially and often leverage previous configurations. However, the goal is to make them as independent as possible.
 
 * xref:docs/kafka.adoc[Core Kafka installation and operations]
+* xref:docs/console.adoc[Kafka Console] (Optional)
 * xref:docs/rebalance.adoc[AMQ Streams Rebalancing] (Optional)
 * xref:docs/client.adoc[Client scalability and resilience] (Optional)
 * xref:docs/access.adoc[Accessing Kafka outside of the OpenShift cluster]
