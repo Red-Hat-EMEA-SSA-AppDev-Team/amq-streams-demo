@@ -56,3 +56,15 @@ spec:
       loggers:
         log4j.logger.io.strimzi: "DEBUG"
 ```
+
+=== Dangling topics
+
+It could happen that you drop your Kafka cluster before removing kafka topics.
+
+In such a case you cannot delete the project (namespace).
+
+In order to delete the dangling topics is to remove the finalizer, this script remove it for all topics in a given namespace:
+
+```sh
+ c -n my-kafka get kafkatopics -o jsonpath='{.items[*].metadata.name}' |xargs -n 1 oc -n my-kafka patch kafkatopics --type=merge -p '{"metadata":{"finalizers":null}}'
+```
