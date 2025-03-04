@@ -150,3 +150,20 @@ Delete Grafana deployment:
 oc delete all --selector application=kafka-monitor
 oc delete configmap grafana-config
 ----
+
+=== Entities segregation
+
+Segregating cluster configuration from daily operational tasks, such as creating users and topics, improves security and simplifies management. This separation is implemented by establishing dedicated namespaces, like `kafka-users` for user management and `kafka-topics` for topic management. By assigning appropriate Role-Based Access Control (RBAC) permissions, users can manage these resources without requiring access to the core Kafka infrastructure. The Kafka CRD's watchedNamespace property, within the entityOperator section, restricts the Topic and User Operators to their designated namespaces.
+
+For instance:
+
+[source,yaml]
+----
+  entityOperator:
+    topicOperator:
+      watchedNamespace: kafka-users
+    userOperator:
+      watchedNamespace: kafka-topics
+----
+
+Following this configuration, create Topic and User Custom Resource Definitions (CRDs) within the corresponding `kafka-topics` and `kafka-users` namespaces, respectively.
