@@ -7,7 +7,7 @@ spec:
     topicOperator: {}
     userOperator: {}
   kafka:
-    version: 3.8.0
+    version: 3.9.0
     config:
       default.replication.factor: 3
       inter.broker.protocol.version: "3.8"
