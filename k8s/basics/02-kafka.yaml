@@ -45,9 +45,10 @@ kind: Kafka
 metadata:
   name: my-cluster
   annotations:
-    app: my-kafka-demo
     strimzi.io/node-pools: enabled
     strimzi.io/kraft: enabled
+  labels:
+    app: my-kafka-demo
 spec:
   kafka:
     version: 3.9.0

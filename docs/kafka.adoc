@@ -21,16 +21,6 @@ oc apply -f k8s/basics/03-kafkatopic.yaml
 
 NOTE: This section relies on the _cluster-admin_ role.
 
-The following script:
-
-* creates a _service account_ for Grafana with an _access token_ (it lasts 30 days)
-* creates a datasource configuration for Grafana to scrape the metrics. It points to Thanos Querier which acts as a Prometheus proxy and uses the previous created _access token_ to gain access. 
-
-[source,shell]
-----
-k8s/monitor/01-create-datasource.sh
-----
-
 The following command add many resources in OpenShift through _kustomizer_:
 
 [source,shell]
@@ -53,6 +43,16 @@ If you chose a different _namespace_ to install the demo artifact, you can updat
 * `k8s/monitor/clusterrolebinding.patch.yaml`
 * `k8s/monitor/podmonitor.patch.yaml`
 ====
+
+The following script:
+
+* creates a _service account_ for Grafana with an _access token_ (it lasts 30 days)
+* creates a datasource configuration for Grafana to scrape the metrics. It points to Thanos Querier which acts as a Prometheus proxy and uses the previous created _access token_ to gain access. 
+
+[source,shell]
+----
+k8s/monitor/01-create-datasource.sh
+----
 
 Optionally, check that the `prometheus-operator`, `prometheus-user-workload` and `thanos-ruler-user-workload` pods are running in the `openshift-user-workload-monitoring` project.
 

@@ -3,9 +3,6 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: grafana-pvc
-  labels:
-    application: kafka-monitor
-    app: my-kafka-demo
 spec:
   accessModes:
   - ReadWriteOnce
@@ -17,9 +14,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
-  labels:
-    app: my-kafka-demo
-    application: kafka-monitor
 spec:
   replicas: 1
   selector:

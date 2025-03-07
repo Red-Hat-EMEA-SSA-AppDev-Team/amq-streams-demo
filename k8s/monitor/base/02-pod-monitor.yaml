@@ -2,8 +2,6 @@ apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
   name: cluster-operator-metrics
-  labels:
-    app: my-kafka-demo
 spec:
   selector:
     matchLabels:
@@ -19,8 +17,6 @@ apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
   name: entity-operator-metrics
-  labels:
-    app: my-kafka-demo
 spec:
   selector:
     matchLabels:
@@ -36,8 +32,6 @@ apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
   name: bridge-metrics
-  labels:
-    app: my-kafka-demo
 spec:
   selector:
     matchLabels:

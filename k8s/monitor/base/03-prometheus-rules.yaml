@@ -3,7 +3,6 @@ kind: PrometheusRule
 metadata:
   labels:
     role: alert-rules
-    app: my-kafka-demo
   name: prometheus-k8s-rules
 spec:
   groups:

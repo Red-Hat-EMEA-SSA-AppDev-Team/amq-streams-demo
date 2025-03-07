@@ -10,7 +10,7 @@ resources:
 - ./base/05-grafana.yaml
 
 commonLabels:
-  app: my-kafka-demo
+  app: kafka-monitor
 
 patches:
 - target:

@@ -2,5 +2,3 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: grafana-serviceaccount
-  labels:
-    app: my-kafka-demo
