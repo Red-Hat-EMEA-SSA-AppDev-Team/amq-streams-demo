@@ -26,6 +26,13 @@ export KAFKA_NAMESPACE=$(oc project -q)
 export CLUSTER_DOMAIN=$(oc get ingress.config.openshift.io/cluster -o jsonpath='{.spec.domain}')
 ----
 
+Create a namespace for the console:
+
+[source,shell]
+----
+oc new-project kafka-ui
+----
+
 Finally, create the console resource:
 
 [source,shell]

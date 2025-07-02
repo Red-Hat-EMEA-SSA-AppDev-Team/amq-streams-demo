@@ -5,8 +5,17 @@ metadata:
   name: kafka-ui
 spec:
   hostname: kafka-console.${CLUSTER_DOMAIN}
+
+  metricsSources:
+    # Example metrics source using OpenShift's built-in monitoring.
+    # For `type: openshift-monitoring`, no additional attributes are required,
+    # but you can configure a truststore if needed.
+  - name: my-ocp-prometheus
+    type: openshift-monitoring
+
   kafkaClusters:
   - name: my-cluster             # Name of the `Kafka` CR representing the cluster
+    metricsSource: my-ocp-prometheus # Name of the configured metrics source defined in `metricsSources`
     namespace: ${KAFKA_NAMESPACE}   # Namespace of the `Kafka` CR representing the cluster
     listener: plain                # Listener on the `Kafka` CR to connect from the console
     properties:
