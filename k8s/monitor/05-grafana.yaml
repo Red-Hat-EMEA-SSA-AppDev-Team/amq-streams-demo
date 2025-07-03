@@ -1,15 +1,4 @@
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: grafana-pvc
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -27,14 +16,7 @@ spec:
       serviceAccountName: grafana-serviceaccount
       containers:
       - name: grafana
-        image: grafana/grafana:11.2.0
-        securityContext:
-          capabilities:
-            drop: [ "ALL" ]
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          seccompProfile:
-            type: "RuntimeDefault"
+        image: grafana/grafana:11.5.1
         ports:
         - name: grafana
           containerPort: 3000
@@ -62,8 +44,7 @@ spec:
           periodSeconds: 20
       volumes:
       - name: grafana-data
-        persistentVolumeClaim:
-          claimName: grafana-pvc
+        emptyDir: {}
       - name: grafana-logs
         emptyDir: {}
       - name: grafana-config
@@ -74,8 +55,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: grafana
-  labels:
-    app: my-kafka-demo
 spec:
   ports:
   - name: grafana
