@@ -9,8 +9,10 @@ resources:
 - ./base/04-graphana-auth.yaml
 - ./base/05-grafana.yaml
 
-commonLabels:
-  app: kafka-monitor
+labels:
+- pairs:
+    app: kafka-monitor
+  includeTemplates: false
 
 patches:
 - target:

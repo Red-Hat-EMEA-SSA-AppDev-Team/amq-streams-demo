@@ -76,7 +76,6 @@ metadata:
   name: grafana
   labels:
     app: my-kafka-demo
-    application: kafka-monitor
 spec:
   ports:
   - name: grafana

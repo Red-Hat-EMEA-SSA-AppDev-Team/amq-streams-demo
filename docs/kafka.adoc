@@ -147,7 +147,10 @@ Delete Grafana deployment:
 
 [source,shell]
 ----
-oc delete all --selector application=kafka-monitor
+oc delete all -l app=kafka-monitor
+oc delete podmonitor -l app=kafka-monitor
+oc delete sa -l app=kafka-monitor
+oc delete pvc -l app=kafka-monitor
 oc delete configmap grafana-config
 ----
 
