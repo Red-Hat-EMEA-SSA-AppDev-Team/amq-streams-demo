@@ -2,7 +2,7 @@
 
 == Create Kafka broker and topic
 
-Add **AMQ Streams** operator to your OpenShift environment.
+Add **Streams for Apache Kafka** operator to your OpenShift environment.
 
 Create a Broker with metrics enabled:
 
@@ -23,7 +23,7 @@ NOTE: This section relies on the _cluster-admin_ role.
 
 [IMPORTANT] 
 ====
-Before proceeding, if you chose a different _namespace_ make sure to update accordingly the following files:
+This workshop is designed to be run in the `kafka-demo` namespace. To change the namespace, you need to update accordingly the following files:
 
 * `k8s/monitor/clusterrolebinding.patch.yaml`
 * `k8s/monitor/podmonitor.patch.yaml`
