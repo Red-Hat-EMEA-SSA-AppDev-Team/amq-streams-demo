@@ -1,8 +1,8 @@
 = Console deployment
 
-**Streams for Apache Kafka** version **2.8** introduces a new user interface as known as **Kafka Console**.
+**Kafka Console** was introduced in _Streams for Apache Kafka version 2.8_ and became general available in _version 2.9_.
 
-WARNING: It's a Technical Preview.
+In this module you will learn how to install and configure the **Kafka Console** with no security enabled.
 
 == Installation
 

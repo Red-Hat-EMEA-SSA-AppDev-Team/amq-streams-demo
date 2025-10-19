@@ -22,6 +22,7 @@ The following modules were developed sequentially and often leverage previous co
 
 == Latest news
 
+- Upgraded to _Streams for Apache Kafka version 3.0_
 - Basic Kafka Console installation
 - Upgraded to _Streams for Apache Kafka version 2.9_
 - Upgraded to _Streams for Apache Kafka version 2.8_
