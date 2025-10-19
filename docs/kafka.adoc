@@ -132,6 +132,43 @@ IMPORTANT: Watching at the consumer log you should notice that it temporarily st
 
 . Show the dashboard
 
+== Clean up
+
+To temporarily stop the demo , you can use the following command:
+
+[source,shell]
+----
+oc scale deployment kafka-producer --replicas 0
+oc scale deployment kafka-consumer --replicas 0
+oc scale deployment grafana --replicas 0
+oc delete kafkanodepool broker controller
+oc delete kafka my-cluster
+oc delete pvc -l app=my-kafka-demo
+----
+
+To restart the demo, you can use the following command:
+
+[source,shell]
+----
+oc apply -f k8s/basics/02-kafka.yaml
+oc scale deployment kafka-producer --replicas 1
+oc scale deployment kafka-consumer --replicas 1
+oc scale deployment grafana --replicas 1
+----
+
+To permanently clean up the demo, you can use the following command:
+
+[source,shell]
+----
+oc delete all -l app=kafka-clients
+oc delete all -l app=kafka-monitor
+oc delete kafkatopic event
+oc delete kafkanodepool broker controller
+oc delete kafka my-cluster
+oc delete pvc -l app=my-kafka-demo
+oc delete project my-kafka-demo
+----
+
 == Appendix
 
 === Refresh Grafana token

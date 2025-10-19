@@ -41,3 +41,12 @@ cat k8s/console/console.yaml | envsubst | oc apply -f -
 ----
 
 Open it in the browser at the following URL: `kafka-console.${KAFKA_NAMESPACE}`
+
+== Clean up
+
+To delete the console, you can use the following command:
+
+[source,shell]
+----
+oc delete consoles.console.streamshub.github.com kafka-ui
+----
