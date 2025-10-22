@@ -166,7 +166,7 @@ oc delete kafkatopic event
 oc delete kafkanodepool broker controller
 oc delete kafka my-cluster
 oc delete pvc -l app=my-kafka-demo
-oc delete project my-kafka-demo
+oc delete project my-kafka
 ----
 
 == Appendix
