@@ -1,4 +1,5 @@
-apiVersion: kafka.strimzi.io/v1beta2
+---
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaRebalance
 metadata:
   name: add-brokers-rebalance
@@ -7,4 +8,5 @@ metadata:
 # no goals specified, using the default goals from the Cruise Control configuration
 spec:
   mode: add-brokers
-  brokers: [3]
+  brokers:
+  - 3

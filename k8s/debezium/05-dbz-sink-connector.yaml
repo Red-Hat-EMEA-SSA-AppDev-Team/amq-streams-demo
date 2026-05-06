@@ -1,4 +1,5 @@
-apiVersion: kafka.strimzi.io/v1beta2
+---
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaConnector
 metadata:
   name: dbz-sink-connector
@@ -11,12 +12,12 @@ spec:
   autoRestart:
     enabled: true
   config:
-    connection.url: "jdbc:mysql://mysql/mysqldbz"
-    connection.username: "mysqldbz"
-    connection.password: "mysqldbz"
+    connection.url: jdbc:mysql://mysql/mysqldbz
+    connection.username: mysqldbz
+    connection.password: mysqldbz
     delete.enabled: "false"
-    insert.mode: "upsert"
+    insert.mode: upsert
     primary.key.mode: record_key
-    schema.evolution: "basic"
-    database.time_zone: "UTC"
-    topics: "outbox.public.shipping"
+    schema.evolution: basic
+    database.time_zone: UTC
+    topics: outbox.public.shipping

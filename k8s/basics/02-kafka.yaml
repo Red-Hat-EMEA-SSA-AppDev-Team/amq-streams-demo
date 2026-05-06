@@ -1,4 +1,5 @@
-apiVersion: kafka.strimzi.io/v1beta2
+---
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaNodePool
 metadata:
   name: controller
@@ -16,10 +17,8 @@ spec:
       type: persistent-claim
       size: 2Gi
       kraftMetadata: shared
-      deleteClaim: false
 ---
-
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaNodePool
 metadata:
   name: broker
@@ -37,10 +36,8 @@ spec:
       type: persistent-claim
       size: 2Gi
       kraftMetadata: shared
-      deleteClaim: false
 ---
-
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: Kafka
 metadata:
   name: my-cluster
@@ -72,25 +69,23 @@ spec:
       log.retention.bytes: 1073741824
       log.segment.bytes: 268435456
       log.segment.delete.delay.ms: 0
+    livenessProbe:
+      initialDelaySeconds: 50
+      periodSeconds: 10
+      failureThreshold: 10
+    readinessProbe:
+      initialDelaySeconds: 50
+      periodSeconds: 5
+      failureThreshold: 10
     metricsConfig:
       type: jmxPrometheusExporter
       valueFrom:
         configMapKeyRef:
-          name: kafka-metrics
           key: kafka-metrics-config.yml
-    readinessProbe:
-      initialDelaySeconds: 50
-      failureThreshold: 10
-      periodSeconds: 5
-      timeoutSeconds: 5
-    livenessProbe:
-      initialDelaySeconds: 50
-      failureThreshold: 10
-      periodSeconds: 10
-      timeoutSeconds: 5
+          name: kafka-metrics
   entityOperator:
     topicOperator: {}
     userOperator: {}
   kafkaExporter:
-    topicRegex: ".*"
-    groupRegex: ".*"
+    topicRegex: .*
+    groupRegex: .*

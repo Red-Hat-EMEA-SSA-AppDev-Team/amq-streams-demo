@@ -1,4 +1,5 @@
-apiVersion: kafka.strimzi.io/v1beta2
+---
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaConnect
 metadata:
   name: dbz-connect
@@ -10,44 +11,37 @@ spec:
   version: 3.9.0
   replicas: 1
   bootstrapServers: my-cluster-kafka-bootstrap.my-kafka.svc:9092
+  groupId: dbz-connect
+  configStorageTopic: dbz-connect-configs
+  statusStorageTopic: dbz-connect-status
+  offsetStorageTopic: dbz-connect-offsets
   config:
-    group.id: dbz-connect
-    offset.storage.topic: dbz-connect-offsets
-    config.storage.topic: dbz-connect-configs
-    status.storage.topic: dbz-connect-status
-    # -1 means it will use the default replication factor configured in the broker
     config.storage.replication.factor: -1
     offset.storage.replication.factor: -1
     status.storage.replication.factor: -1
     jmxhost: 0.0.0.0
     jmxport: 9999
+  metricsConfig:
+    type: jmxPrometheusExporter
+    valueFrom:
+      configMapKeyRef:
+        key: debezium-metrics-config.yml
+        name: debezium-metrics
   build:
     output:
       type: imagestream
       image: debezium-streams-connect:latest
     plugins:
-      - name: debezium-connector-postgres
-        artifacts:
-          - type: zip
-            url: https://maven.repository.redhat.com/ga/io/debezium/debezium-connector-postgres/2.5.4.Final-redhat-00001/debezium-connector-postgres-2.5.4.Final-redhat-00001-plugin.zip
-          - type: zip
-            url: https://maven.repository.redhat.com/ga/io/debezium/debezium-connector-jdbc/2.5.4.Final-redhat-00001/debezium-connector-jdbc-2.5.4.Final-redhat-00001-plugin.zip
-          - type: zip
-            url: https://maven.repository.redhat.com/ga/io/debezium/debezium-scripting/2.5.4.Final-redhat-00001/debezium-scripting-2.5.4.Final-redhat-00001.zip
-          - type: zip
-            url: https://maven.repository.redhat.com/ga/io/apicurio/apicurio-registry-distro-connect-converter/2.5.9.Final-redhat-00001/apicurio-registry-distro-connect-converter-2.5.9.Final-redhat-00001.zip
-          # - type: jar
-          #   url: https://repo1.maven.org/maven2/org/codehaus/groovy/groovy/3.0.11/groovy-3.0.11.jar
-          # - type: jar
-          #   url: https://repo1.maven.org/maven2/org/codehaus/groovy/groovy-jsr223/3.0.11/groovy-jsr223-3.0.11.jar
-          # - type: jar
-          #   url: https://repo1.maven.org/maven2/org/codehaus/groovy/groovy-json3.0.11/groovy-json-3.0.11.jar
-  metricsConfig:
-    type: jmxPrometheusExporter
-    valueFrom:
-      configMapKeyRef:
-        name: debezium-metrics
-        key: debezium-metrics-config.yml
+    - name: debezium-connector-postgres
+      artifacts:
+      - type: zip
+        url: https://maven.repository.redhat.com/ga/io/debezium/debezium-connector-postgres/2.5.4.Final-redhat-00001/debezium-connector-postgres-2.5.4.Final-redhat-00001-plugin.zip
+      - type: zip
+        url: https://maven.repository.redhat.com/ga/io/debezium/debezium-connector-jdbc/2.5.4.Final-redhat-00001/debezium-connector-jdbc-2.5.4.Final-redhat-00001-plugin.zip
+      - type: zip
+        url: https://maven.repository.redhat.com/ga/io/debezium/debezium-scripting/2.5.4.Final-redhat-00001/debezium-scripting-2.5.4.Final-redhat-00001.zip
+      - type: zip
+        url: https://maven.repository.redhat.com/ga/io/apicurio/apicurio-registry-distro-connect-converter/2.5.9.Final-redhat-00001/apicurio-registry-distro-connect-converter-2.5.9.Final-redhat-00001.zip
 ---
 kind: ConfigMap
 apiVersion: v1
@@ -56,7 +50,7 @@ metadata:
   labels:
     application: debezium
 data:
-  debezium-metrics-config.yml: |
+  debezium-metrics-config.yml: |-
     # Inspired by kafka-connect rules
     # https://github.com/prometheus/jmx_exporter/blob/master/example_configs/kafka-connect.yml
     # See https://github.com/prometheus/jmx_exporter for more info about JMX Prometheus Exporter metrics
@@ -177,3 +171,4 @@ data:
       name: kafka_connect_worker_rebalance_$1
       help: "Kafka Connect JMX metric rebalance information"
       type: GAUGE
+

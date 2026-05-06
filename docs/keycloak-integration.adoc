@@ -1,3 +1,5 @@
+WARNING: *Content TO BE REVIEWED:* The OAuth authentication is removed in the v1 API version. Use the Custom authentication instead. Please fix the resource manually and re-run the conversion tool. 
+
 = Keycloak integration
 
 WARNING: In this document, *Keycloak* and *Red Hat SSO* are interchangeable. The latter is the product made out of the upstream community project known as Keycloak. However, all the procedures are tested using *Red Hat SSO*.

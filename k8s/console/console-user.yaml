@@ -1,5 +1,5 @@
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaUser
 metadata:
   name: console-kafka-user1
@@ -11,25 +11,23 @@ spec:
   authorization:
     type: simple
     acls:
-      - resource:
-          type: cluster
-          name: ""
-          patternType: literal
-        operations:
-          - Describe
-          - DescribeConfigs
-      - resource:
-          type: topic
-          name: "*"
-          patternType: literal
-        operations:
-          - Read
-          - Describe
-          - DescribeConfigs
-      - resource:
-          type: group
-          name: "*"
-          patternType: literal
-        operations:
-          - Read
-          - Describe
+    - resource:
+        type: cluster
+        name: ""
+        patternType: literal
+      operations:
+      - Describe
+      - DescribeConfigs
+    - resource:
+        type: topic
+        name: '*'
+      operations:
+      - Read
+      - Describe
+      - DescribeConfigs
+    - resource:
+        type: group
+        name: '*'
+      operations:
+      - Read
+      - Describe

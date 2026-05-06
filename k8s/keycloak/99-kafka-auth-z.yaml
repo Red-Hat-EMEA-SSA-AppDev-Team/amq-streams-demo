@@ -1,3 +1,5 @@
+# io.strimzi.kafka.api.conversion.v1.converter.ApiConversionFailedException: The OAuth authentication is removed in the v1 API version. Use the Custom authentication instead. Please fix the resource manually and re-run the conversion tool.
+#
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
