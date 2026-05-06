@@ -1,5 +1,7 @@
 = Red Hat Streams for Apache Kafka demo
 
+WARNING: *Version 3.2* introduced many breaking changes! All the Kafka CRDs in this repository have been automatically migrated to the latest version of the APIs. A complete review of the content is in progress. The latest stable version of this workshop is available in *v3.0* branch.
+
 The goal of this demo is to show some of the key capabilities of Red Hat Streams for Apache Kafka.
 
 *Red Hat Streams for Apache Kafka* footnote:[https://access.redhat.com/products/streams-for-apache-kafka] is the Red Hat distribution of Apache Kafka and Strimzi projects footnote:[https://strimzi.io/]. One of the key feature is to simplify the configuration and management of _Apache Kafka_ in *OpenShift Container Platform*.
@@ -22,6 +24,7 @@ The following modules were developed sequentially and often leverage previous co
 
 == Latest news
 
+- Upgraded to _Streams for Apache Kafka version 3.2_
 - Upgraded to _Streams for Apache Kafka version 3.0_
 - Basic Kafka Console installation
 - Upgraded to _Streams for Apache Kafka version 2.9_
