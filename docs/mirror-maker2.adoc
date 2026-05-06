@@ -1,0 +1,46 @@
+= MirrorMaker 2
+
+WARNING: Work in progress
+
+
+*MirrorMaker 2* is made of two connectors running on top of _KafkaConnect_ runtime:
+
+- `MirrorSourceConnector`: in charge of copying messages.
+- `MirrorCheckpointConnector`: in charge of synchronizing consumer group offsets between source and target clusters.
+
+Let's assume this scenario: 2 Kafka cluster named "a" and "b", topics in "b" should be mirrored in cluster "a".
+
+In the MirrorMaker terminology the cluster "a" has the _source_ role and the cluster "b" has the _target_ role.
+
+After the MirrorMaker initialization, the following topics are created on the _target_ cluster:
+
+- `mirrormaker2-cluster-configs`: Stores Kafka Connect configurations.
+- `mirrormaker2-cluster-offsets`: Stores consumer offsets.
+- `mirrormaker2-cluster-status`: Stores Kafka Connect status updates.
+- `cluster-b.checkpoints.internal`: Stores information about the last committed offset in the source and target clusters for replicated topics and consumer groups. This topic is controlled by the Checkpoint Connector.
+
+Whereas, this topic is created on the source cluster:
+
+- `mm2-offset-syncs.cluster-a.internal`: used to synchronize consumer group offsets of mirrored topics
+
+Further readings: link:https://developers.redhat.com/articles/2023/11/13/demystifying-kafka-mirrormaker-2-use-cases-and-architecture[Demystifying Kafka MirrorMaker 2 use cases and architecture]
+
+== Avoid Infinite mirrors effect
+
+When configuring bidirectional Kafka mirroring, it's essential to prevent circular replication. This 'infinite mirror' effect occurs when mirrored topics are re-mirrored back to the original cluster. To avoid this, carefully define topic and consumer group patterns to exclude internal Kafka topics and those already mirrored. A practical approach is to prefix mirrored topic names with a designated string, enabling precise filtering.
+
+E.g. 
+
+[source,json]
+----
+    "topics": "b.*",
+    "groups": "b.*",
+----
+
+
+== Useful tuning parameters
+
+- `consumer.connections.max.idle.ms`: 180000. Maximum amount of time an idle connection to a Kafka broker can remain open before it's closed.
+- `metadata.max.age.ms`: 180000. How long the Kafka client will cache metadata about topics and brokers. It forces the client to refresh its metadata.
+- Frequency of topic refresh. Default is 600 (10 minutes). By default, a check for new topics in the source cluster is made every 10 minutes. You can change the frequency by adding `refresh.topics.interval.seconds` to the source connector configuration.
+

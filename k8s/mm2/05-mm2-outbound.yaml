@@ -1,0 +1,49 @@
+kind: KafkaMirrorMaker2
+apiVersion: kafka.strimzi.io/v1beta2
+metadata:
+  name: outbound
+  namespace: kafka-demo
+spec:
+  version: 3.9.0
+  replicas: 1
+  connectCluster: cluster-b
+  clusters:
+  - alias: cluster-a
+    # bootstrapServers: my-cluster-kafka-bootstrap:9092
+    bootstrapServers: cluster-a-kafka-bootstrap:9092
+  - alias: cluster-b
+    bootstrapServers: vdab-ehns-ldv-open.servicebus.windows.net:9093
+    # bootstrapServers: remote-cluster-kafka-bootstrap:9092
+    config:
+      config.storage.replication.factor: 1
+      offset.storage.replication.factor: 1
+      status.storage.replication.factor: 1
+      consumer.connections.max.idle.ms: 180000
+      consumer.metadata.max.age.ms: 180000
+    # authentication:
+    #   type: scram-sha-512
+    #   username: my-user
+    #   passwordSecret:
+    #     secretName: my-user
+    #     password: password
+    authentication:
+      type: plain
+      username: '$ConnectionString'
+      passwordSecret:
+        secretName: eventhubssecret
+        password: eventhubspassword
+    tls:
+      trustedCertificates: []
+  mirrors:
+  - sourceCluster: cluster-a
+    targetCluster: cluster-b
+    sourceConnector:
+      config:
+        replication.factor: 1
+        offset-syncs.topic.replication.factor: 1
+        sync.topic.acls.enabled: 'false'
+    checkpointConnector:
+      config:
+        checkpoints.topic.replication.factor: 1
+    topicsPattern: A.*
+    groupsPattern: A.*
