@@ -1,0 +1,30 @@
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: kafka-ui
+spec:
+  hostname: kafka-console.${CLUSTER_DOMAIN}
+
+  security:
+    oidc:
+      authServerUrl: https://console-dex.${CLUSTER_DOMAIN}
+      clientId: streamshub-console
+      clientSecret:
+        valueFrom:
+          secretKeyRef:
+            name: console-dex-secrets
+            key: CONSOLE_SECURITY_OIDC_CLIENT_SECRET
+
+  metricsSources:
+  - name: my-ocp-prometheus
+    type: openshift-monitoring
+
+  kafkaClusters:
+  - name: my-cluster
+    metricsSource: my-ocp-prometheus
+    namespace: ${KAFKA_NAMESPACE}
+    listener: plain
+    properties:
+      values: []
+      valuesFrom: []

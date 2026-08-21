@@ -40,7 +40,70 @@ Finally, create the console resource:
 cat k8s/console/console.yaml | envsubst | oc apply -f -
 ----
 
-Open it in the browser at the following URL: `kafka-console.${KAFKA_NAMESPACE}`
+Open it in the browser at the following URL: `kafka-console.${CLUSTER_DOMAIN}`
+
+== Authentication with Dex (optional)
+
+By default the console runs without authentication. To add a login page with local email/password credentials, you can deploy https://dexidp.io/[Dex] as a lightweight OIDC provider with static passwords — no external SSO required.
+
+=== Generate credentials
+
+Generate a bcrypt hash for the desired password:
+
+[source,shell]
+----
+htpasswd -BinC 10 admin <<< "admin123" | cut -d: -f2
+----
+
+Generate a random client secret:
+
+[source,shell]
+----
+openssl rand -hex 16
+----
+
+Set the environment variables (in addition to `KAFKA_NAMESPACE` and `CLUSTER_DOMAIN` set earlier):
+
+Fish shell:
+
+[source,shell]
+----
+set -x DEX_CLIENT_SECRET (openssl rand -hex 16)
+set -x DEX_PASSWORD_HASH (htpasswd -BinC 10 admin <<< "admin123" | cut -d: -f2)
+----
+
+Bash shell:
+
+[source,shell]
+----
+export DEX_CLIENT_SECRET=$(openssl rand -hex 16)
+export DEX_PASSWORD_HASH=$(htpasswd -BinC 10 admin <<< "admin123" | cut -d: -f2)
+----
+
+=== Deploy Dex
+
+[source,shell]
+----
+cat k8s/console/dex.yaml | envsubst | oc apply -f -
+----
+
+Wait for the Dex pod to be ready:
+
+[source,shell]
+----
+oc rollout status deployment/console-dex
+----
+
+=== Deploy the secured console
+
+Instead of `console.yaml`, use the secured variant that includes the OIDC configuration:
+
+[source,shell]
+----
+cat k8s/console/console-secured.yaml | envsubst | oc apply -f -
+----
+
+The console will now redirect to a Dex login page. Use the credentials configured in the static passwords (default: `admin@example.com` / `admin123`).
 
 == Clean up
 
@@ -49,4 +112,12 @@ To delete the console, you can use the following command:
 [source,shell]
 ----
 oc delete consoles.console.streamshub.github.com kafka-ui
+----
+
+If you deployed Dex for authentication, also remove its resources:
+
+[source,shell]
+----
+oc delete deployment/console-dex service/console-dex route/console-dex secret/console-dex-config secret/console-dex-secrets sa/console-dex -n kafka-ui
+oc delete clusterrole/console-dex clusterrolebinding/console-dex
 ----

@@ -1,0 +1,134 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: console-dex
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: console-dex
+rules:
+- apiGroups: ["dex.coreos.com"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: console-dex
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: console-dex
+subjects:
+- kind: ServiceAccount
+  name: console-dex
+  namespace: kafka-ui
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: console-dex-config
+type: Opaque
+stringData:
+  config.yaml: |
+    issuer: https://console-dex.${CLUSTER_DOMAIN}
+
+    storage:
+      type: kubernetes
+      config:
+        inCluster: true
+
+    web:
+      http: 0.0.0.0:5556
+      allowedOrigins: ['*']
+
+    oauth2:
+      responseTypes: ["code"]
+      skipApprovalScreen: true
+      passwordConnector: local
+
+    enablePasswordDB: true
+
+    staticPasswords:
+    - email: "admin@example.com"
+      hash: "${DEX_PASSWORD_HASH}"
+      username: "admin"
+      userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
+
+    staticClients:
+    - id: streamshub-console
+      name: 'StreamsHub Console'
+      secret: ${DEX_CLIENT_SECRET}
+      redirectURIs:
+      - 'https://kafka-console.${CLUSTER_DOMAIN}/api/auth/callback/oidc'
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: console-dex-secrets
+type: Opaque
+stringData:
+  CONSOLE_SECURITY_OIDC_CLIENT_SECRET: "${DEX_CLIENT_SECRET}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console-dex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: console-dex
+  template:
+    metadata:
+      labels:
+        app: console-dex
+    spec:
+      serviceAccountName: console-dex
+      containers:
+      - name: dex
+        image: ghcr.io/dexidp/dex:v2.41.1
+        command: ["dex", "serve", "/etc/dex/config.yaml"]
+        ports:
+        - containerPort: 5556
+          name: http
+        volumeMounts:
+        - name: config
+          mountPath: /etc/dex
+          readOnly: true
+      volumes:
+      - name: config
+        secret:
+          secretName: console-dex-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: console-dex
+spec:
+  selector:
+    app: console-dex
+  ports:
+  - port: 5556
+    targetPort: 5556
+    name: http
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: console-dex
+spec:
+  host: console-dex.${CLUSTER_DOMAIN}
+  to:
+    kind: Service
+    name: console-dex
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
