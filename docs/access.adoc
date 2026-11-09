@@ -27,7 +27,16 @@ Otherwise patch it with the following command:
 +
 [source,shell]
 ----
-oc patch kafka my-cluster --patch '{"spec":{"kafka": { "listeners": [{"authentication":{"type":"scram-sha-512"},"name":"external","port":9094,"tls":true,"type":"route"} ] } }}' --type=merge
+oc patch kafka my-cluster --type=json --patch '[{"op":"add","path":"/spec/kafka/listeners/-","value":{"authentication":{"type":"scram-sha-512"},"name":"external","port":9094,"tls":true,"type":"route"}}]'
+----
+
+WARNING: A merge patch replaces an entire list; do not use a merge patch containing only the `external` listener. The JSON patch above appends it and preserves the existing listeners.
+
+If the old merge-patch command has already removed the internal listeners, restore the complete listener list (including the external listener) with:
+
+[source,shell]
+----
+oc patch kafka my-cluster --type=merge --patch '{"spec":{"kafka":{"listeners":[{"name":"plain","port":9092,"type":"internal","tls":false},{"name":"tls","port":9093,"type":"internal","tls":true},{"name":"external","port":9094,"type":"route","tls":true,"authentication":{"type":"scram-sha-512"}}]}}}'
 ----
 
 . Define a new user:
@@ -45,20 +54,19 @@ oc get kafka my-cluster -o=jsonpath='{.status.listeners[?(@.name=="external")].c
 keytool -import -trustcacerts -alias root -file kafka-cluster-ca.crt -keystore truststore.jks -storepass password -noprompt
 ----
 
-. Configure the kafka consumer to run from your local environment and connect to the Kafka cluster on OpenShift. The following script configures the *truststore*, the *security protocol*, the *authentication mechanism* and the *credentials* which are extracted from the secret:
+. Configure the Kafka consumer to run from your local environment and connect to the Kafka cluster on OpenShift. Client security is selected at runtime: `KAFKA_SECURITY_PROTOCOL=PLAINTEXT` (the default) uses an unsecured listener, while `SASL_PLAINTEXT` or `SASL_SSL` enables authentication. The same consumer and producer image supports either mode; provide the matching Kafka client environment variables when starting it.
 +
 [source,shell]
 ----
-echo -e "\n\n## Kafka remote config
-kafka.ssl.truststore.location = ../truststore.jks
-kafka.ssl.truststore.password = password
-kafka.security.protocol=SASL_SSL
-kafka.sasl.mechanism=SCRAM-SHA-512" >> kafka-consumer/src/main/resources/application.properties
-echo "kafka.sasl.jaas.config=$(oc get secret my-user -o jsonpath='{.data.sasl\.jaas\.config}' | base64 -d)" >> kafka-consumer/src/main/resources/application.properties
-oc get kafka my-cluster -o jsonpath='{"\nkafka.bootstrap.servers="}{.status.listeners[?(@.name=="external")].bootstrapServers}{"\n"}' >> kafka-consumer/src/main/resources/application.properties
+export KAFKA_BOOTSTRAP_SERVERS="$(oc get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="external")].bootstrapServers}')"
+export KAFKA_SSL_TRUSTSTORE_LOCATION=../truststore.jks
+export KAFKA_SSL_TRUSTSTORE_PASSWORD=password
+export KAFKA_SECURITY_PROTOCOL=SASL_SSL
+export KAFKA_SASL_MECHANISM=SCRAM-SHA-512
+export KAFKA_SASL_JAAS_CONFIG="$(oc get secret my-user -o jsonpath='{.data.sasl\.jaas\.config}' | base64 -d)"
 ----
 +
-NOTE: The properties are added to the `application.properties` managed by Quarkus. By convention, all properties prefixed with `kafka` are passed to the Kafka client API configuration.
+NOTE: Quarkus converts environment variable names such as `KAFKA_SASL_MECHANISM` to Kafka client property names such as `kafka.sasl.mechanism`. Any Kafka client property can therefore be supplied this way. The authentication-specific variables are only needed when `KAFKA_SECURITY_PROTOCOL` is a SASL protocol.
 
 . Start locally the kafka consumer:
 +
@@ -124,6 +132,13 @@ Under `kafka` add `authorization` and the the authentication for each listener:
           type: scram-sha-512
 ----
 +
+For the standard cluster defined in this repository, the `external` listener is already authenticated. Add SCRAM authentication to the remaining `plain` and `tls` listeners without replacing the listener list:
+
+[source,shell]
+----
+oc patch kafka my-cluster --type=json --patch '[{"op":"add","path":"/spec/kafka/listeners/0/authentication","value":{"type":"scram-sha-512"}},{"op":"add","path":"/spec/kafka/listeners/1/authentication","value":{"type":"scram-sha-512"}}]'
+----
++
 WARNING: When you enable the authorization all your listener have to authenticate their clients. In fact, authorization acts cluster wide, so you cannot accept anymore anonymous interactions.
 
 . Edit the `kafkauser` resource
@@ -172,12 +187,23 @@ mvn -f kafka-consumer/pom.xml package quarkus:dev
 
 . Stop the consumer and add back the `Read` operation in the ACL.
 
-When the authorization is enabled, the Kafka client inside OCP require the proper configuration to provide the correct credential when they initiate the broker conversation.
+When authorization is enabled, configure the Kafka client environment of each application. This changes runtime configuration only: no new consumer or producer image is required. The base ConfigMaps set `KAFKA_SECURITY_PROTOCOL: PLAINTEXT`; replace it and add the following variables to both `kafka-producer-config` and `kafka-consumer-config`.
 
-. Open the configmap with the producer environment variable and add the following:
+. Update both application ConfigMaps:
++
+[source,shell]
+----
+oc edit configmap kafka-producer-config
+oc edit configmap kafka-consumer-config
+----
 +
 [source,yaml]
 ----
+
+# In the data section of each ConfigMap, set the bootstrap service for the
+# authenticated listener, replace KAFKA_SECURITY_PROTOCOL, and add the
+# following properties:
+  KAFKA_BOOTSTRAP_SERVERS: my-cluster-kafka-bootstrap:9092
   KAFKA_SASL_JAAS_CONFIG: |-
     org.apache.kafka.common.security.scram.ScramLoginModule
     required username="my-user" password="<PASSWORD>";
@@ -185,7 +211,14 @@ When the authorization is enabled, the Kafka client inside OCP require the prope
   KAFKA_SECURITY_PROTOCOL: SASL_PLAINTEXT
 ----
 +
-Replace `<PASSWORD>` with the outcomes of: `oc get secret my-user -o jsonpath='{.data.password}' | base64 -d`
+Replace `<PASSWORD>` with the output of: `oc get secret my-user -o jsonpath='{.data.password}' | base64 -d`
+
+Restart the workloads after updating their ConfigMaps, because Kubernetes injects ConfigMap values as environment variables when a Pod is created:
+
+[source,shell]
+----
+oc rollout restart deployment/kafka-producer deployment/kafka-consumer
+----
 
 . Issue the following commands to start the Kafka producer application, inspect the logs, and spot potential error messages:
 +

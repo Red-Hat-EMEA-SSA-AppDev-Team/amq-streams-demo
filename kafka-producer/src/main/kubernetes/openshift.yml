@@ -6,6 +6,9 @@ metadata:
     app.kubernetes.io/name: kafka-producer
 data:
   KAFKA_BOOTSTRAP_SERVERS: my-cluster-kafka-bootstrap:9092
+  # Set to SASL_PLAINTEXT or SASL_SSL, together with the SASL variables, to
+  # use an authenticated listener without changing the application image.
+  KAFKA_SECURITY_PROTOCOL: PLAINTEXT
   POSTGRESQL_SVC: "event-db:5432"
   PRODUCER_TICK_FREQUENCY: "100"
   PRODUCER_PARTED: "false"
