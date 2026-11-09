@@ -42,6 +42,32 @@ cat k8s/console/console.yaml | envsubst | oc apply -f -
 
 Open it in the browser at the following URL: `kafka-console.${CLUSTER_DOMAIN}`
 
+== Connect to a SCRAM-protected Kafka cluster
+
+When Kafka uses `scram-sha-512` authentication and simple authorization, the Console needs its own `KafkaUser` and ACLs. First configure SCRAM authentication on every Kafka listener and simple authorization as described in xref:access.adoc#_authorization[Authorization].
+
+The Console user needs cluster metadata permissions, access to topic metadata and records, and access to consumer group metadata. Create the supplied user in the namespace containing the Kafka cluster:
+
+[source,shell]
+----
+oc -n "$KAFKA_NAMESPACE" apply -f k8s/console/console-user.yaml
+----
+
+`console-user.yaml` creates `console-kafka-user1` with the following minimum ACLs:
+
+- Cluster: `Describe`, `DescribeConfigs`
+- All topics: `Read`, `Describe`, `DescribeConfigs`
+- All consumer groups: `Read`, `Describe`
+
+Deploy the SCRAM-aware Console resource. It selects the `plain` listener configured with SCRAM and references the `KafkaUser`; the Console operator obtains the generated credentials from the User Operator secret.
+
+[source,shell]
+----
+cat k8s/console/console-scram.yaml | envsubst | oc -n kafka-ui apply -f -
+----
+
+If the SCRAM listener has a different name, update `spec.kafkaClusters[0].listener` in `k8s/console/console-scram.yaml` to that listener name before applying it.
+
 == Authentication with Dex (optional)
 
 By default the console runs without authentication. To add a login page with local email/password credentials, you can deploy https://dexidp.io/[Dex] as a lightweight OIDC provider with static passwords — no external SSO required.

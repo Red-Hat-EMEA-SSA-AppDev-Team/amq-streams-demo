@@ -1,0 +1,24 @@
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: kafka-ui
+spec:
+  hostname: kafka-console.${CLUSTER_DOMAIN}
+
+  metricsSources:
+  - name: my-ocp-prometheus
+    type: openshift-monitoring
+
+  kafkaClusters:
+  - name: my-cluster
+    metricsSource: my-ocp-prometheus
+    namespace: ${KAFKA_NAMESPACE}
+    # This listener must use SCRAM-SHA-512 authentication.
+    listener: plain
+    credentials:
+      kafkaUser:
+        name: console-kafka-user1
+    properties:
+      values: []
+      valuesFrom: []
