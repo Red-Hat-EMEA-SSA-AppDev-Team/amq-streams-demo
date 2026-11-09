@@ -1,0 +1,36 @@
+# Patch for an Apicurio Registry 3 ApicurioRegistry3 custom resource.
+spec:
+  app:
+    podTemplateSpec:
+      spec:
+        containers:
+        - name: apicurio-registry-app
+          startupProbe:
+            httpGet:
+              path: /health/started
+              port: 9000
+            failureThreshold: 36
+            periodSeconds: 5
+            timeoutSeconds: 3
+    storage:
+      type: kafkasql
+      kafkasql:
+        # Use the TLS listener. SCRAM credentials must not be sent over a plain listener.
+        bootstrapServers: ${KAFKA_SCRAM_BOOTSTRAP_SERVERS}
+        tls:
+          truststoreSecretRef:
+            name: my-cluster-cluster-ca-cert
+            key: ca.p12
+          truststorePasswordSecretRef:
+            name: my-cluster-cluster-ca-cert
+            key: ca.password
+    env:
+    - name: APICURIO_KAFKA_COMMON_SECURITY_PROTOCOL
+      value: SASL_SSL
+    - name: APICURIO_KAFKA_COMMON_SASL_MECHANISM
+      value: SCRAM-SHA-512
+    - name: APICURIO_KAFKA_COMMON_SASL_JAAS_CONFIG
+      valueFrom:
+        secretKeyRef:
+          name: apicurio-registry
+          key: sasl.jaas.config

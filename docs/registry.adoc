@@ -1,6 +1,6 @@
-= Service Registry
+= Apicurio Registry 3
 
-Red Hat build of Apicurio Registry is a central data store for schemas and API artifacts. It is a datastore for standard event schemas and API designs. Developers can use it to decouple the data structure from their applications and share and manage the data structure using a REST interface.
+Red Hat build of Apicurio Registry 3 is a central data store for schemas and API artifacts. It is a datastore for standard event schemas and API designs. Developers can use it to decouple the data structure from their applications and share and manage the data structure using a REST interface.
 
 It's based on Apicurio Registry open source community project.
 
@@ -10,7 +10,7 @@ This document expects:
 
 * AMQ Streams operator deployed
 * A Kafka cluster already deployed in your environment called `my-cluster`.
-* No authorization configured
+* The initial installation instructions assume that Kafka has no client authentication or authorization configured. A secured SCRAM setup is covered later.
 * Keycloak installed in the keycloak namespace
 * Keycloak clients: kafka-producer 
 
@@ -19,39 +19,87 @@ This document expects:
 === Install the Operator
 
 In the left navigation menu, click *Operators* and then *OperatorHub*.
-In the Filter by keyword text box, enter registry to find the *Red Hat Integration - Service Registry Operator*.
+In the `Filter by keyword` text box, enter `registry` to find the *Red Hat build of Apicurio Registry*.
+
+Install the operator to watch all namespaces, or include the `apicurio` namespace in its watched namespaces.
 
 === Deploy the Registry
 
-The following commands:
+The following commands create an `ApicurioRegistry3` resource with KafkaSQL storage and configure separate HTTPS routes for the Registry API and UI:
 
-* Extract the Kafka route
-* Create a registry instance
-* Expose the service externally
+* Extract the Kafka bootstrap address
+* Create a Registry 3 instance
+* Configure API and UI routes managed by the Registry Operator
 
 Set environment variables for bash:
 
 [source,shell]
 ----
-export KAFKA_ROUTE=$(oc get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="plain")].bootstrapServers}')
-export PROJECT_DOMAIN=$(oc project -q).$(oc get ingresses.config/cluster -o jsonpath={.spec.domain})
+export KAFKA_NAMESPACE=$(oc project -q)
+export APICURIO_NAMESPACE=apicurio
+export KAFKA_ROUTE=$(oc -n "$KAFKA_NAMESPACE" get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="plain")].bootstrapServers}')
+export PROJECT_DOMAIN=${APICURIO_NAMESPACE}.$(oc get ingresses.config/cluster -o jsonpath={.spec.domain})
 ----
 
 Set environment variables for fish:
 
 [source,shell]
 ----
-set -x KAFKA_ROUTE (oc get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="plain")].bootstrapServers}')
-set -x PROJECT_DOMAIN (oc project -q).(oc get ingresses.config/cluster -o jsonpath={.spec.domain})
+set -x KAFKA_NAMESPACE (oc project -q)
+set -x APICURIO_NAMESPACE apicurio
+set -x KAFKA_ROUTE (oc -n $KAFKA_NAMESPACE get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="plain")].bootstrapServers}')
+set -x PROJECT_DOMAIN "$APICURIO_NAMESPACE."(oc get ingresses.config/cluster -o jsonpath={.spec.domain})
 ----
 
 [source,shell]
 ----
+oc get namespace "$APICURIO_NAMESPACE" >/dev/null 2>&1 || oc new-project "$APICURIO_NAMESPACE"
 cat k8s/registry/01-registry.yaml | envsubst | oc apply -f -
-oc create route edge --service=registry-service --insecure-policy=Redirect
 ----
 
-It's worth noting that the configuration includes the `host` property, which is used for CORS permissions in the registry web app.
+Open the Registry UI at `https://registry-ui-${PROJECT_DOMAIN}`. The REST API is available at `https://registry-api-${PROJECT_DOMAIN}/apis/registry/v3`.
+
+=== Use KafkaSQL storage with SCRAM authentication and simple authorization
+
+This section configures the Registry's Kafka storage connection. It is independent of the Keycloak settings used to protect the Registry REST API and web console.
+
+Prerequisites:
+
+* Kafka listeners use `scram-sha-512` authentication and the Kafka cluster uses `simple` authorization. See xref:access.adoc#_authorization[Authorization].
+* The Registry is deployed in the `apicurio` namespace and Kafka runs in `$KAFKA_NAMESPACE`.
+* The Kafka `tls` listener is enabled. The Registry uses this listener so that SCRAM credentials are protected in transit.
+
+The Registry KafkaSQL backend stores its data in the `kafkasql-journal` and `kafkasql-snapshots` topics, and uses `registry-events` for Registry events. Registry 3 requires all three topics to use `cleanup.policy: delete` with infinite retention. Create the topics and a dedicated SCRAM user:
+
+[source,shell]
+----
+oc -n "$KAFKA_NAMESPACE" apply -f k8s/registry/03-kafkasql-scram-resources.yaml
+oc -n "$KAFKA_NAMESPACE" wait kafkauser/apicurio-registry --for=condition=Ready --timeout=120s
+----
+
+The user is allowed to read and write both Registry topics and to use the Registry consumer groups with the `apicurio-` prefix. The User Operator creates the `apicurio-registry` Secret containing the SCRAM password; the Cluster Operator creates the `my-cluster-cluster-ca-cert` Secret containing the TLS truststore. Secrets are namespace-scoped, so copy both into `apicurio` before deploying the Registry:
+
+[source,shell]
+----
+for secret in apicurio-registry my-cluster-cluster-ca-cert; do
+  oc -n "$KAFKA_NAMESPACE" get secret "$secret" -o json |
+    jq 'del(.metadata.namespace, .metadata.resourceVersion, .metadata.uid, .metadata.creationTimestamp, .metadata.generation, .metadata.managedFields, .metadata.ownerReferences, .metadata.annotations)' |
+    oc -n "$APICURIO_NAMESPACE" apply -f -
+done
+----
+
+The copy command requires `jq` and preserves the secret data while removing metadata that belongs to the source namespace.
+
+Get the TLS bootstrap address and patch the `ApicurioRegistry3` resource:
+
+[source,shell]
+----
+export KAFKA_SCRAM_BOOTSTRAP_SERVERS="$(oc -n "$KAFKA_NAMESPACE" get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="tls")].bootstrapServers}')"
+oc -n "$APICURIO_NAMESPACE" patch apicurioregistry3/registry --type=merge --patch "$(envsubst < k8s/registry/04-kafkasql-scram.yaml)"
+oc -n "$APICURIO_NAMESPACE" rollout status deployment/registry-app-deployment
+----
+
+The patch configures a startup probe so that the Registry has time to initialize before liveness checks begin, the KafkaSQL TLS truststore, and the `APICURIO_KAFKA_COMMON_*` SCRAM client properties. Registry 3 supports structured configuration for OAuth only; SCRAM uses these environment variables. Do not use the plain listener for SCRAM; use a TLS listener such as `tls` (normally port `9093`).
 
 === Enable Registry security
 
@@ -70,7 +118,7 @@ Bash
 [source,shell]
 ----
 export KEYCLOAK_ROUTE=$(oc get route keycloak -n keycloak -o jsonpath='{.spec.host}')
-oc patch apicurioregistry/registry --type=merge --patch-file="$(cat k8s/registry/02-security.yaml | envsubst)"
+oc -n "$APICURIO_NAMESPACE" patch apicurioregistry3/registry --type=merge --patch "$(envsubst < k8s/registry/02-security.yaml)"
 ----
 
 Fish:
@@ -78,12 +126,12 @@ Fish:
 [source,shell]
 ----
 set -x KEYCLOAK_ROUTE (oc get route keycloak -n keycloak -o jsonpath='{.spec.host}')
-oc patch apicurioregistry/registry --type=merge --patch-file=(cat k8s/registry/02-security.yaml | envsubst | psub)
+cat k8s/registry/02-security.yaml | envsubst | oc -n $APICURIO_NAMESPACE patch apicurioregistry3/registry --type=merge --patch-file=/dev/stdin
 ----
 
 == Register a schema
 
-Open the registry web console (get the URL with: `oc get route registry-service -o jsonpath='{.spec.host}'`)
+Open the Registry 3 web console at `https://registry-ui-${PROJECT_DOMAIN}`.
 
 Upload the Avro schema available here:
 
@@ -126,7 +174,7 @@ If you haven't already done so, the following commands will create the TLS trust
 
 [source,shell]
 ----
-oc get kafka my-cluster -o=jsonpath='{.status.listeners[?(@.name=="tls")].certificates[0]}{"\n"}' > kafka-cluster-ca.crt
+oc -n "$KAFKA_NAMESPACE" get kafka my-cluster -o=jsonpath='{.status.listeners[?(@.name=="tls")].certificates[0]}{"\n"}' > kafka-cluster-ca.crt
 cat kafka-cluster-ca.crt
 keytool -import -trustcacerts -alias root -file kafka-cluster-ca.crt -keystore truststore.jks -storepass password -noprompt
 ----
@@ -138,9 +186,14 @@ Bash:
 [#env-script]
 [source,shell]
 ----
-export KAFKA_ROUTE=$(oc get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="tls")].bootstrapServers}')
+export KAFKA_NAMESPACE=${KAFKA_NAMESPACE:-$(oc project -q)}
+export APICURIO_NAMESPACE=${APICURIO_NAMESPACE:-apicurio}
+export KAFKA_ROUTE=$(oc -n "$KAFKA_NAMESPACE" get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="tls")].bootstrapServers}')
 export KEYCLOAK_ROUTE=$(oc get route keycloak -n keycloak -o jsonpath='{.spec.host}')
-export SERVICE_REGISTRY_URL=$(oc get route registry-service -o jsonpath='{.spec.host}')
+export PROJECT_DOMAIN=${APICURIO_NAMESPACE}.$(oc get ingresses.config/cluster -o jsonpath={.spec.domain})
+# The Quarkus extension in this example is a Registry 2 client. Registry 3
+# retains the v2 API during migration, so use the API route rather than the UI.
+export SERVICE_REGISTRY_URL=registry-api-${PROJECT_DOMAIN}/apis/registry/v2
 export OAUTH_TOKEN_ENDPOINT=https://$KEYCLOAK_ROUTE/auth/realms/kafka/protocol/openid-connect/token
 export CLIENT_ID=kafka-producer
 export CLIENT_SECRET=kafka-producer-secret
@@ -151,9 +204,14 @@ Fish:
 [#env-script]
 [source,shell]
 ----
-set -x KAFKA_ROUTE (oc get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="tls")].bootstrapServers}')
+set -q KAFKA_NAMESPACE; or set -x KAFKA_NAMESPACE (oc project -q)
+set -q APICURIO_NAMESPACE; or set -x APICURIO_NAMESPACE apicurio
+set -x KAFKA_ROUTE (oc -n $KAFKA_NAMESPACE get kafka my-cluster -o jsonpath='{.status.listeners[?(@.name=="tls")].bootstrapServers}')
 set -x KEYCLOAK_ROUTE (oc get route keycloak -n keycloak -o jsonpath='{.spec.host}')
-set -x SERVICE_REGISTRY_URL (oc get route registry-service -o jsonpath='{.spec.host}')
+set -x PROJECT_DOMAIN "$APICURIO_NAMESPACE."(oc get ingresses.config/cluster -o jsonpath={.spec.domain})
+# The Quarkus extension in this example is a Registry 2 client. Registry 3
+# retains the v2 API during migration, so use the API route rather than the UI.
+set -x SERVICE_REGISTRY_URL registry-api-$PROJECT_DOMAIN/apis/registry/v2
 set -x OAUTH_TOKEN_ENDPOINT https://$KEYCLOAK_ROUTE/auth/realms/kafka/protocol/openid-connect/token
 set -x CLIENT_ID kafka-producer
 set -x CLIENT_SECRET kafka-producer-secret
@@ -382,6 +440,8 @@ oc delete kt movies
 
 === Schema automatic download
 
+The Maven plug-in uses the Registry 3 API. The sample Quarkus application above remains a Registry 2 client and uses the retained v2 compatibility endpoint during its migration.
+
 It's possible to configure maven to automatically retrieve the artifact from the repository:
 
 [source,xmls]
@@ -389,7 +449,7 @@ It's possible to configure maven to automatically retrieve the artifact from the
 <plugin>
   <groupId>io.apicurio</groupId>
   <artifactId>apicurio-registry-maven-plugin</artifactId>
-  <version>2.4.4.Final</version>
+  <version>3.2.4.redhat-00010</version>
   <executions>
       <execution>
         <phase>generate-sources</phase>
@@ -397,7 +457,7 @@ It's possible to configure maven to automatically retrieve the artifact from the
             <goal>download</goal> 
         </goals>
         <configuration>
-            <registryUrl>https://<REGISTRY_DOMAIN>/apis/registry/v2</registryUrl>
+            <registryUrl>https://<REGISTRY_DOMAIN>/apis/registry/v3</registryUrl>
             <authServerUrl>https://<KEYCLOAK_DOMAIN>/auth/realms/kafka/protocol/openid-connect/token</authServerUrl>
             <clientId>kafka-producer</clientId>
             <clientSecret>kafka-producer-secret</clientSecret>
@@ -417,6 +477,6 @@ It's possible to configure maven to automatically retrieve the artifact from the
 
 === External References
 
-* https://quarkus.io/version/2.13/guides/kafka-schema-registry-avro[Quarkus tutorial]
-* https://access.redhat.com/documentation/en-us/red_hat_build_of_apicurio_registry/2.4/html-single/apicurio_registry_user_guide/index#registry-serdes-config-props_registry[Apicurio doc - Serde configurtation]
+* https://docs.redhat.com/en/documentation/red_hat_build_of_apicurio_registry/3.2/html/apicurio_registry_user_guide/index[Apicurio Registry 3 user guide]
+* https://docs.redhat.com/en/documentation/red_hat_build_of_apicurio_registry/3.2/html/migrating_apicurio_registry_deployments/migrating-registry-applications_registry[Registry 3 client migration guide]
 * https://github.com/Apicurio/apicurio-registry/issues/1592#issuecomment-870495742[Clarification on the lookup mechanism]

@@ -1,14 +1,23 @@
-# template
 apiVersion: registry.apicur.io/v1
-kind: ApicurioRegistry
+kind: ApicurioRegistry3
 metadata:
   name: registry
+  namespace: apicurio
 spec:
-  configuration:
-    persistence: 'kafkasql'
-    kafkasql:
-      bootstrapServers: ${KAFKA_ROUTE}
-  deployment:
-    host: registry-service-${PROJECT_DOMAIN}
-    managedResources:
-      disableIngress: true
+  app:
+    storage:
+      type: kafkasql
+      kafkasql:
+        bootstrapServers: ${KAFKA_ROUTE}
+    ingress:
+      host: registry-api-${PROJECT_DOMAIN}
+      annotations:
+        route.openshift.io/termination: edge
+  ui:
+    env:
+    - name: REGISTRY_API_URL
+      value: https://registry-api-${PROJECT_DOMAIN}/apis/registry/v3
+    ingress:
+      host: registry-ui-${PROJECT_DOMAIN}
+      annotations:
+        route.openshift.io/termination: edge

@@ -1,10 +1,17 @@
-# patch + template
+# Patch for an ApicurioRegistry3 custom resource.
 spec:
-  configuration:
-    env:
-    - name: CORS_ALLOWED_ORIGINS
-      value: '*'
-    security:
-      keycloak:
-        url: "https://${KEYCLOAK_ROUTE}/auth"
-        realm: "kafka"
+  app:
+    auth:
+      enabled: true
+      appClientId: registry-client-api
+      uiClientId: registry-client-ui
+      authServerUrl: https://${KEYCLOAK_ROUTE}/auth/realms/kafka
+      redirectUri: https://registry-ui-${PROJECT_DOMAIN}
+      logoutUrl: https://registry-ui-${PROJECT_DOMAIN}
+      authz:
+        enabled: true
+        roles:
+          source: token
+          admin: sr-admin
+          developer: sr-developer
+          readOnly: sr-readonly
