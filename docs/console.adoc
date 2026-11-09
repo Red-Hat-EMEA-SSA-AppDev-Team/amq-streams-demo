@@ -33,6 +33,8 @@ Create a namespace for the console:
 oc new-project kafka-ui
 ----
 
+== Connect to Kafka cluster with no security enabled
+
 Finally, create the console resource:
 
 [source,shell]
@@ -59,6 +61,22 @@ oc -n "$KAFKA_NAMESPACE" apply -f k8s/console/console-user.yaml
 - All topics: `Read`, `Describe`, `DescribeConfigs`
 - All consumer groups: `Read`, `Describe`
 
+The User Operator creates the `console-kafka-user1` credentials Secret in `$KAFKA_NAMESPACE`, whereas the Console resource and its service account run in `kafka-ui`. Grant that service account permission to read only this Secret:
+
+[source,shell]
+----
+oc -n "$KAFKA_NAMESPACE" create role console-kafkauser-secret-reader \
+  --verb=get \
+  --resource=secrets \
+  --resource-name=console-kafka-user1
+
+oc -n "$KAFKA_NAMESPACE" create rolebinding console-kafkauser-secret-reader \
+  --role=console-kafkauser-secret-reader \
+  --serviceaccount=kafka-ui:kafka-ui-console-serviceaccount
+----
+
+If you deploy the Console with a different namespace or Console resource name, replace `kafka-ui:kafka-ui-console-serviceaccount` with its actual `namespace:serviceaccount` value. You can find the required service account in the Console `AccessDenied` message.
+
 Deploy the SCRAM-aware Console resource. It selects the `plain` listener configured with SCRAM and references the `KafkaUser`; the Console operator obtains the generated credentials from the User Operator secret.
 
 [source,shell]
@@ -67,6 +85,22 @@ cat k8s/console/console-scram.yaml | envsubst | oc -n kafka-ui apply -f -
 ----
 
 If the SCRAM listener has a different name, update `spec.kafkaClusters[0].listener` in `k8s/console/console-scram.yaml` to that listener name before applying it.
+
+=== Log in with Kafka credentials interactively
+
+For evaluation, you can let each Console user enter their own Kafka credentials instead of configuring `credentials.kafkaUser`. The Kafka listener must still use `scram-sha-512`, and every user must have a corresponding `KafkaUser` and the Kafka ACLs required for their work. Apply `console.yaml`, which deliberately omits `credentials.kafkaUser`:
+
+[source,shell]
+----
+envsubst < k8s/console/console.yaml | oc -n kafka-ui apply -f -
+----
+
+In the Console homepage, select the Kafka cluster and click *Login to cluster*. Enter the SCRAM username and password from that user's `KafkaUser` Secret. This removes the operator's need to read a shared KafkaUser Secret, so the Secret `Role` and `RoleBinding` described above are not needed for this configuration.
+
+[WARNING]
+====
+The Console documentation deprecates interactive Kafka login because entered credentials are transmitted through and stored by the Console. Use it only for trusted evaluation environments. For production, use an application-scoped OIDC Kafka authentication flow instead.
+====
 
 == Authentication with Dex (optional)
 
