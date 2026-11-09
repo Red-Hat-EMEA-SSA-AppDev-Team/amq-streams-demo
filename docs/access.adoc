@@ -132,11 +132,15 @@ Under `kafka` add `authorization` and the the authentication for each listener:
           type: scram-sha-512
 ----
 +
-For the standard cluster defined in this repository, the `external` listener is already authenticated. Add SCRAM authentication to the remaining `plain` and `tls` listeners without replacing the listener list:
-
+The following script applies all the changes in one shot.
+It's worth noticing that it does not change the third listener since it is already configured with the SCRAM authentication:
++
 [source,shell]
 ----
-oc patch kafka my-cluster --type=json --patch '[{"op":"add","path":"/spec/kafka/listeners/0/authentication","value":{"type":"scram-sha-512"}},{"op":"add","path":"/spec/kafka/listeners/1/authentication","value":{"type":"scram-sha-512"}}]'
+oc patch kafka my-cluster --type=json --patch '[
+{"op":"add","path":"/spec/kafka/authorization","value":{"type":"simple"}},
+{"op":"add","path":"/spec/kafka/listeners/0/authentication","value":{"type":"scram-sha-512"}},
+{"op":"add","path":"/spec/kafka/listeners/1/authentication","value":{"type":"scram-sha-512"}}]'
 ----
 +
 WARNING: When you enable the authorization all your listener have to authenticate their clients. In fact, authorization acts cluster wide, so you cannot accept anymore anonymous interactions.
@@ -199,7 +203,6 @@ oc edit configmap kafka-consumer-config
 +
 [source,yaml]
 ----
-
 # In the data section of each ConfigMap, set the bootstrap service for the
 # authenticated listener, replace KAFKA_SECURITY_PROTOCOL, and add the
 # following properties:
@@ -213,17 +216,11 @@ oc edit configmap kafka-consumer-config
 +
 Replace `<PASSWORD>` with the output of: `oc get secret my-user -o jsonpath='{.data.password}' | base64 -d`
 
-Restart the workloads after updating their ConfigMaps, because Kubernetes injects ConfigMap values as environment variables when a Pod is created:
-
-[source,shell]
-----
-oc rollout restart deployment/kafka-producer deployment/kafka-consumer
-----
-
-. Issue the following commands to start the Kafka producer application, inspect the logs, and spot potential error messages:
+. Start again consumer and producer and check the logs to spot potential error messages:
 +
 [source,shell]
 ----
+oc scale deployment/kafka-consumer --replicas=1
 oc scale deployment/kafka-producer --replicas=1
 oc logs --tail=20 -f --selector="app.kubernetes.io/name=kafka-producer"
 ----
