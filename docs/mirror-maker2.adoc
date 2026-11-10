@@ -1,46 +1,183 @@
-= MirrorMaker 2
+= Mirror the `event` topic with MirrorMaker 2
 
-WARNING: Work in progress
+This tutorial copies the existing `event` topic from `my-kafka/my-cluster` to a new Kafka cluster in the `kafka-mirror` namespace. MirrorMaker 2 reads from the source and writes to the destination:
 
+`my-kafka/my-cluster` -> MirrorMaker 2 -> `kafka-mirror/cluster-b`
 
-*MirrorMaker 2* is made of two connectors running on top of _KafkaConnect_ runtime:
+The source topic has 12 partitions and replication factor 3. Its listener requires SCRAM-SHA-512 authentication and ACLs. The destination uses one broker and replication factor 1. Both clusters run Kafka 4.2.0. This is a learning setup; a single-broker cluster is not a resilient disaster recovery target.
 
-- `MirrorSourceConnector`: in charge of copying messages.
-- `MirrorCheckpointConnector`: in charge of synchronizing consumer group offsets between source and target clusters.
+Run the commands from the repository root with `oc` logged in. You also need `jq` for the Secret copy. The Streams for Apache Kafka operator must watch both namespaces.
 
-Let's assume this scenario: 2 Kafka cluster named "a" and "b", topics in "b" should be mirrored in cluster "a".
+== Create the destination
 
-In the MirrorMaker terminology the cluster "a" has the _source_ role and the cluster "b" has the _target_ role.
+Create the separate namespace that will hold the destination Kafka cluster and MirrorMaker 2.
 
-After the MirrorMaker initialization, the following topics are created on the _target_ cluster:
-
-- `mirrormaker2-cluster-configs`: Stores Kafka Connect configurations.
-- `mirrormaker2-cluster-offsets`: Stores consumer offsets.
-- `mirrormaker2-cluster-status`: Stores Kafka Connect status updates.
-- `cluster-b.checkpoints.internal`: Stores information about the last committed offset in the source and target clusters for replicated topics and consumer groups. This topic is controlled by the Checkpoint Connector.
-
-Whereas, this topic is created on the source cluster:
-
-- `mm2-offset-syncs.cluster-a.internal`: used to synchronize consumer group offsets of mirrored topics
-
-Further readings: link:https://developers.redhat.com/articles/2023/11/13/demystifying-kafka-mirrormaker-2-use-cases-and-architecture[Demystifying Kafka MirrorMaker 2 use cases and architecture]
-
-== Avoid Infinite mirrors effect
-
-When configuring bidirectional Kafka mirroring, it's essential to prevent circular replication. This 'infinite mirror' effect occurs when mirrored topics are re-mirrored back to the original cluster. To avoid this, carefully define topic and consumer group patterns to exclude internal Kafka topics and those already mirrored. A practical approach is to prefix mirrored topic names with a designated string, enabling precise filtering.
-
-E.g. 
-
-[source,json]
+[source,shell]
 ----
-    "topics": "b.*",
-    "groups": "b.*",
+oc apply -f k8s/mm2/00-namespace.yaml
 ----
 
+Create the broker's JMX exporter configuration in that namespace. It uses the same metric rules as `my-kafka`, so the existing Kafka Grafana dashboard can use the `cluster-b` series.
 
-== Useful tuning parameters
+[source,shell]
+----
+oc apply -f k8s/mm2/01-kafka-metrics.yaml
+----
 
-- `consumer.connections.max.idle.ms`: 180000. Maximum amount of time an idle connection to a Kafka broker can remain open before it's closed.
-- `metadata.max.age.ms`: 180000. How long the Kafka client will cache metadata about topics and brokers. It forces the client to refresh its metadata.
-- Frequency of topic refresh. Default is 600 (10 minutes). By default, a check for new topics in the source cluster is made every 10 minutes. You can change the frequency by adding `refresh.topics.interval.seconds` to the source connector configuration.
+Create `cluster-b` with one node that serves as both controller and broker. Its persistent volume keeps data across pod restarts.
 
+[source,shell]
+----
+oc apply -f k8s/mm2/01-kafka-cluster-b.yaml
+----
+
+Wait until the operator reports that the destination Kafka cluster is ready. Do this before starting MirrorMaker 2, which stores its own state on the destination.
+
+[source,shell]
+----
+oc wait kafka/cluster-b -n kafka-mirror --for=condition=Ready --timeout=10m
+----
+
+== Give MirrorMaker access to the source
+
+Create the `mm2-source` Kafka user on the existing source cluster. Its ACLs allow reading and describing only the `event` topic, plus reading consumer groups.
+
+[source,shell]
+----
+oc apply -f k8s/mm2/02-user.yaml
+----
+
+Wait for the user operator to generate the SCRAM password and apply its ACLs.
+
+[source,shell]
+----
+oc wait kafkauser/mm2-source -n my-kafka --for=condition=Ready --timeout=5m
+----
+
+The generated password is in the `mm2-source` Secret in `my-kafka`. Copy that Secret into `kafka-mirror` because the MirrorMaker 2 pod can reference Secrets only in its own namespace. The command removes Kubernetes metadata that must not be copied. It does not print the password or store it in Git.
+
+[source,shell]
+----
+oc get secret mm2-source -n my-kafka -o json | jq 'del(.metadata.namespace, .metadata.uid, .metadata.resourceVersion, .metadata.creationTimestamp, .metadata.ownerReferences, .metadata.managedFields, .metadata.annotations)' | oc apply -n kafka-mirror -f -
+----
+
+== Start mirroring
+
+Create MirrorMaker 2's JMX exporter configuration. It exposes connector task and replication metrics, including record rate and record age.
+
+[source,shell]
+----
+oc apply -f k8s/mm2/03-mirror-maker-metrics.yaml
+----
+
+Create `mirror-maker`. Its source connector connects to `my-cluster` with the copied credential and mirrors only `event` into `cluster-b`. `IdentityReplicationPolicy` keeps the destination topic name as `event`.
+
+[source,shell]
+----
+oc apply -f k8s/mm2/04-mirror-maker.yaml
+----
+
+Wait for MirrorMaker 2 and its connector task to start.
+
+[source,shell]
+----
+oc wait kafkamirrormaker2/mirror-maker -n kafka-mirror --for=condition=Ready --timeout=10m
+----
+
+Create a `PodMonitor` to have OpenShift user workload Prometheus scrape both pods on their `tcp-prometheus` ports. This uses the same approach as the monitoring setup in link:kafka.adoc[the Kafka tutorial]. Grafana in `my-kafka` already uses the Thanos Querier datasource, so it can query metrics from `kafka-mirror` without a second Grafana deployment.
+
+[source,shell]
+----
+oc apply -f k8s/mm2/05-pod-monitor.yaml
+----
+
+== Verify the copy
+
+Check the MirrorMaker 2 resource. `READY` should be `True`.
+
+[source,shell]
+----
+oc get kafkamirrormaker2/mirror-maker -n kafka-mirror
+----
+
+Describe the destination topic directly on the broker. It should be named `event`, with 12 partitions and replication factor 1. Topic creation and partition synchronization can take a short time after MirrorMaker becomes ready.
+
+[source,shell]
+----
+oc exec -n kafka-mirror cluster-b-combined-b-0 -- bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic event
+----
+
+Read the destination end offsets for each partition. Nonzero offsets show that records have reached the new cluster; run the command again to see them advance while the source receives records.
+
+[source,shell]
+----
+oc exec -n kafka-mirror cluster-b-combined-b-0 -- bin/kafka-get-offsets.sh --bootstrap-server localhost:9092 --topic event
+----
+
+Kafka orders records within each partition, not across the whole topic. To see the most recent 10 records, choose one partition (partition `0` below). Repeat with another partition number from `0` to `11` if needed.
+
+Get the next offset after the last record in partition `0`.
+
+[source,shell]
+----
+mm2_end_offset=$(oc exec -n kafka-mirror cluster-b-combined-b-0 -- bin/kafka-get-offsets.sh --bootstrap-server localhost:9092 --topic-partitions event:0 --time latest | cut -d: -f3)
+----
+
+Get its earliest available offset, since older records may have expired under the topic's retention policy.
+
+[source,shell]
+----
+mm2_earliest_offset=$(oc exec -n kafka-mirror cluster-b-combined-b-0 -- bin/kafka-get-offsets.sh --bootstrap-server localhost:9092 --topic-partitions event:0 --time earliest | cut -d: -f3)
+----
+
+Start 10 offsets before the end, or at the earliest retained record if fewer than 10 remain.
+
+[source,shell]
+----
+mm2_start_offset=$((mm2_end_offset - 10 > mm2_earliest_offset ? mm2_end_offset - 10 : mm2_earliest_offset))
+----
+
+Consume from that offset. `--max-messages 10` stops after 10 records, and the timeout prevents waiting indefinitely if the partition has fewer.
+
+[source,shell]
+----
+oc exec -n kafka-mirror cluster-b-combined-b-0 -- bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic event --partition 0 --offset "$mm2_start_offset" --max-messages 10 --timeout-ms 10000
+----
+
+Check that the broker and MirrorMaker 2 pods are running if the topic or offsets are not yet as expected.
+
+[source,shell]
+----
+oc get pods -n kafka-mirror
+----
+
+Kafka clients in `kafka-mirror` can consume the mirrored topic through `cluster-b-kafka-bootstrap.kafka-mirror.svc:9092`.
+
+== View metrics in Grafana
+
+Confirm that the PodMonitor exists. Once Prometheus has scraped the new pods, open Grafana in `my-kafka` and use *Explore* with its existing Prometheus datasource.
+
+[source,shell]
+----
+oc get podmonitor kafka-mirror-metrics -n kafka-mirror
+----
+
+Query `up{namespace="kafka-mirror"}` to check both scrape targets. A value of `1` means Prometheus can reach the exporter. Query `kafka_connect_mirror_mirrorsourceconnector_record_rate{namespace="kafka-mirror"}` for mirrored record rate, or `kafka_connect_mirror_mirrorsourceconnector_record_age_ms{namespace="kafka-mirror"}` for record age. You can also import `grafana-dashboards/strimzi-kraft.json` and `grafana-dashboards/strimzi-kafka-mirror-maker-2.json` into the existing Grafana instance, then select `kafka-mirror` and the corresponding cluster. Prometheus may need a few scrape intervals before the series appear.
+
+The source connector copies topic data asynchronously. This example does not synchronize consumer group offsets or perform automatic failover. For a full disaster recovery deployment, add a checkpoint connector, monitor replication lag, use multiple brokers and workers, and rehearse client cutover. See Red Hat's link:https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/3.2/html/disaster_recovery_using_mirrormaker_2/index[MirrorMaker 2 disaster recovery guide].
+
+== Clean up
+
+When finished with the tutorial, remove its source user from `my-kafka`. This also removes the generated credential and ACLs on `my-cluster`; the source `event` topic is unaffected.
+
+[source,shell]
+----
+oc delete kafkauser mm2-source -n my-kafka
+----
+
+Delete the dedicated `kafka-mirror` namespace. This removes `mirror-maker`, `cluster-b`, the PodMonitor, copied Secret, metrics ConfigMaps, and the destination topic's PVC. The storage class controls what happens to the underlying volume. Namespace deletion can take a few minutes.
+
+[source,shell]
+----
+oc delete namespace kafka-mirror
+----

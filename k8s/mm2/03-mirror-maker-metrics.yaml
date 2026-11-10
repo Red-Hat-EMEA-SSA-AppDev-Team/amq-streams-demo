@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mirror-maker-metrics
+  namespace: kafka-mirror
+data:
+  metrics-config.yml: |
+    lowercaseOutputName: true
+    lowercaseOutputLabelNames: true
+    rules:
+      # Consumer lag is reported per topic partition.
+      - pattern: 'kafka.consumer<type=consumer-fetch-manager-metrics, client-id=(.+), topic=(.+), partition=(.+)><>(records-lag)'
+        name: kafka_consumer_fetch_manager_$4
+        labels:
+          clientId: "$1"
+          topic: "$2"
+          partition: "$3"
+        type: GAUGE
+      # Kafka Connect worker counts used by the MirrorMaker dashboard.
+      - pattern: 'kafka.connect<type=connect-worker-metrics, connector=(.+)><>([a-z-]+)'
+        name: kafka_connect_worker_$2
+        labels:
+          connector: "$1"
+        type: GAUGE
+      - pattern: 'kafka.connect<type=connect-worker-metrics><>([a-z-]+)'
+        name: kafka_connect_worker_$1
+        type: GAUGE
+      - pattern: 'kafka.connect<type=connect-worker-rebalance-metrics><>([a-z-]+)'
+        name: kafka_connect_worker_rebalance_$1
+        type: GAUGE
+      - pattern: 'kafka.connect<type=connect-coordinator-metrics><>(assigned-connectors|assigned-tasks)'
+        name: kafka_connect_coordinator_$1
+        type: GAUGE
+      # Client byte counters used by the MirrorMaker dashboard.
+      - pattern: 'kafka.(.+)<type=(.+)-metrics, client-id=(.*)><>(.+-total)'
+        name: kafka_$2_$4
+        labels:
+          clientId: "$3"
+        type: COUNTER
+      - pattern: 'kafka.producer<type=producer-metrics, client-id=(.*)><>(buffer-available-bytes)'
+        name: kafka_producer_$2
+        labels:
+          clientId: "$1"
+        type: GAUGE
+      # MirrorSourceConnector metrics, including record-rate and record-age-ms.
+      - pattern: 'kafka.connect.mirror<type=MirrorSourceConnector, source=(.+), target=(.+), topic=(.+), partition=(.+)><>([a-z-_]+)'
+        name: kafka_connect_mirror_mirrorsourceconnector_$5
+        labels:
+          source: "$1"
+          target: "$2"
+          topic: "$3"
+          partition: "$4"
+        type: GAUGE
+      # Kafka Connect task throughput and errors.
+      - pattern: 'kafka.connect<type=(.+)-metrics, connector=(.+), task=(.+)><>(.+-total)'
+        name: kafka_connect_$1_$4
+        labels:
+          connector: "$2"
+          task: "$3"
+        type: COUNTER
+      - pattern: 'kafka.connect<type=(.+)-metrics, connector=(.+), task=(.+)><>(.+-count|.+-ms|.+-ratio|.+-avg|.+-errors|.+-failures)'
+        name: kafka_connect_$1_$4
+        labels:
+          connector: "$2"
+          task: "$3"
+        type: GAUGE

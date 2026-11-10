@@ -1,0 +1,44 @@
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaMirrorMaker2
+metadata:
+  name: mirror-maker
+  namespace: kafka-mirror
+spec:
+  version: 4.2.0
+  replicas: 1
+  metricsConfig:
+    type: jmxPrometheusExporter
+    valueFrom:
+      configMapKeyRef:
+        name: mirror-maker-metrics
+        key: metrics-config.yml
+  target:
+    alias: mirror
+    bootstrapServers: cluster-b-kafka-bootstrap.kafka-mirror.svc:9092
+    groupId: mirror-maker-connect
+    configStorageTopic: __mirror-maker-configs
+    offsetStorageTopic: __mirror-maker-offsets
+    statusStorageTopic: __mirror-maker-status
+    config:
+      config.storage.replication.factor: 1
+      offset.storage.replication.factor: 1
+      status.storage.replication.factor: 1
+  mirrors:
+    - source:
+        alias: primary
+        bootstrapServers: my-cluster-kafka-bootstrap.my-kafka.svc:9092
+        authentication:
+          type: scram-sha-512
+          username: mm2-source
+          passwordSecret:
+            secretName: mm2-source
+            password: password
+      topicsPattern: event
+      sourceConnector:
+        config:
+          replication.factor: 1
+          offset-syncs.topic.location: target
+          offset-syncs.topic.replication.factor: 1
+          replication.policy.class: org.apache.kafka.connect.mirror.IdentityReplicationPolicy
+          sync.topic.acls.enabled: false
+          refresh.topics.interval.seconds: 30

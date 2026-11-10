@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: kafka-mirror-metrics
+  namespace: kafka-mirror
+  labels:
+    app: kafka-monitor
+spec:
+  namespaceSelector:
+    matchNames:
+      - kafka-mirror
+  selector:
+    matchExpressions:
+      - key: strimzi.io/kind
+        operator: In
+        values:
+          - Kafka
+          - KafkaMirrorMaker2
+  podMetricsEndpoints:
+    - path: /metrics
+      port: tcp-prometheus
+      relabelings:
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(strimzi_io_.+)
+          replacement: $1
+        - action: replace
+          sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+        - action: replace
+          sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: kubernetes_pod_name

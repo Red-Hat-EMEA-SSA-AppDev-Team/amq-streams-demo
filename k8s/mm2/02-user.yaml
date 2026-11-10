@@ -1,10 +1,23 @@
----
 apiVersion: kafka.strimzi.io/v1
 kind: KafkaUser
 metadata:
-  name: my-user
+  name: mm2-source
+  namespace: my-kafka
   labels:
-    strimzi.io/cluster: remote-cluster
+    strimzi.io/cluster: my-cluster
 spec:
   authentication:
     type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: event
+          patternType: literal
+        operations: [Read, Describe]
+      - resource:
+          type: group
+          name: '*'
+          patternType: literal
+        operations: [Read]
