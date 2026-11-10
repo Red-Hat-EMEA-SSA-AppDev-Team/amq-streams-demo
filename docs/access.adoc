@@ -225,6 +225,109 @@ oc scale deployment/kafka-producer --replicas=1
 oc logs --tail=20 -f --selector="app.kubernetes.io/name=kafka-producer"
 ----
 
+== Quotas
+
+=== Prerequisites
+
+1. **Quota Plugin Type**: Ensure your Kafka cluster uses the built-in `kafka` quota plugin. The `strimzi` quota plugin applies only aggregate limits cluster-wide and does not support per-user quota overrides. The built-in `kafka` plugin is active by default unless explicitly configured otherwise.
+2. **User Operator Running**: Ensure the User Operator is deployed as part of the `Entity Operator` in your `Kafka` custom resource to watch and manage `KafkaUser` resources.
+3. **Cluster Reference Label**: Any `KafkaUser` resource must include the `strimzi.io/cluster: <cluster-name>` label identifying the Kafka cluster it belongs to.
+
+=== Step 1: Verify the Kafka Cluster Quota Plugin
+
+Check that your `Kafka` resource either does not define a quota plugin (defaulting to `kafka`) or explicitly configures the `kafka` plugin:
+
+[source,yaml]
+----
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: my-cluster
+spec:
+  kafka:
+    # ...
+    quotas:
+      type: kafka
+----
+
+=== Step 2: Define or Update the `KafkaUser` Resource
+
+Configure the `spec.quotas.producerByteRate` property in the `KafkaUser` resource for `my-user`. The `producerByteRate` property defines the maximum number of bytes per second that the client can publish to each broker before produce requests are throttled.
+
+Edit `my-user`:
+
+[source,shell]
+----
+oc edit kafkausers my-user
+----
+
+add the quotas section:
+
+[source,yaml]
+----
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: my-user
+  labels:
+    strimzi.io/cluster: my-cluster     # Matches the name of your Kafka custom resource
+spec:
+  authentication:
+    type: scram-sha-512|
+  quotas:
+    producerByteRate: 10000         # Limit to 1 10000 bytes/sec per broker
+    # Optional additional quota properties:
+    # consumerByteRate: 2097152       # Limit fetch rate to 2 MB/s per broker
+    # requestPercentage: 50           # Limit CPU utilization across network & I/O threads
+----
+
+* `producerByteRate`: Value in bytes per second (for example, `1048576` = 1 MB/s, `10485760` = 10 MB/s) applied on a per-broker basis.
+* `consumerByteRate` / `requestPercentage`: Optional additional parameters to limit fetch throughput or broker CPU processing time.
+
+
+The **User Operator** detects the resource update and automatically applies the quota to the user principal inside the Kafka cluster.
+
+---
+
+=== Step 3: Verify the Quota Configuration
+
+. Check the status of the `KafkaUser` resource to ensure reconciliation succeeded:
++
+[source,shell]
+----
+oc get kafkauser my-user -o yaml
+----
++
+Verify that under `status.conditions`, the condition type `Ready` is `True`.
+
+. *(Optional)* In the **Streams for Apache Kafka Console**, navigate to the **Kafka Users** page, select `my-user`, and inspect the user's details and configuration.
+
+
+=== Alternative: Enabling quotas on RHEL
+
+For deployments running directly on RHEL or when modifying user quotas via the Kafka Admin CLI without the User Operator, use the `kafka-configs.sh` utility:
+
+[source,shell]
+----
+/opt/kafka/bin/kafka-configs.sh \
+  --bootstrap-server <bootstrap_address>:9092 \
+  --entity-type users \
+  --entity-name my-user \
+  --alter \
+  --add-config producer_byte_rate=1048576
+----
+
+To verify the updated configuration:
+
+[source,shell]
+----
+/opt/kafka/bin/kafka-configs.sh \
+  --bootstrap-server <bootstrap_address>:9092 \
+  --entity-type users \
+  --entity-name my-user \
+  --describe
+----
+
 == Clean up
 
 [source,shell]
