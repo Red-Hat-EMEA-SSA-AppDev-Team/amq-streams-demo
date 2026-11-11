@@ -153,6 +153,31 @@ oc get pods -n kafka-mirror
 
 Kafka clients in `kafka-mirror` can consume the mirrored topic through `cluster-b-kafka-bootstrap.kafka-mirror.svc:9092`.
 
+== Stop and restart the connector
+
+To stop copying records temporarily, set the source connector's state to `stopped`. MirrorMaker 2 keeps the connector configuration and offsets, but stops its tasks. The MirrorMaker 2 worker and destination Kafka cluster remain running.
+
+[source,shell]
+----
+oc patch kafkamirrormaker2/mirror-maker -n kafka-mirror --type=json -p='[{"op":"add","path":"/spec/mirrors/0/sourceConnector/state","value":"stopped"}]'
+----
+
+Check the requested state:
+
+[source,shell]
+----
+oc get kafkamirrormaker2/mirror-maker -n kafka-mirror -o jsonpath='{.spec.mirrors[0].sourceConnector.state}{"\n"}'
+----
+
+To start the connector again, set its state to `running`. It resumes from its stored offsets and catches up with records written to the source while it was stopped.
+
+[source,shell]
+----
+oc patch kafkamirrormaker2/mirror-maker -n kafka-mirror --type=json -p='[{"op":"add","path":"/spec/mirrors/0/sourceConnector/state","value":"running"}]'
+----
+
+Check that the requested state is `running`, then repeat the destination offset check in the previous section to confirm that copying has resumed. See the link:https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/3.2/html/deploying_and_managing_streams_for_apache_kafka_on_openshift/overview-str[Streams for Apache Kafka connector lifecycle instructions] for the supported connector states.
+
 == View metrics in Grafana
 
 Confirm that the PodMonitor exists. Once Prometheus has scraped the new pods, open Grafana in `my-kafka` and use *Explore* with its existing Prometheus datasource.
