@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+
+- ./base/00.Namespace.my-proxy.yaml
+- ./base/01.KafkaProxy.my-proxy.yaml
+- ./base/03.KafkaService.my-cluster.yaml
+- ./base/04.VirtualKafkaCluster.my-cluster.yaml
+- ./base/05.Issuer.self-signed-issuer.yaml
+- ./base/06.PodMonitor.proxy.yaml
+- ./base/11.KafkaProxyIngress-my-ingress.yaml
+- ./base/12.Certificate.my-cluster-server-certificate.yaml
+
+namespace: kafka-proxy
+
+labels:
+- pairs:
+    app: kafka-proxy
+  includeTemplates: false
+

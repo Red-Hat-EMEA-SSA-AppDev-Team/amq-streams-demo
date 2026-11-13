@@ -1,0 +1,29 @@
+#
+# Copyright Kroxylicious Authors.
+#
+# Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
+#
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: my-cluster-server-certificate
+spec:
+  commonName: my-cluster-my-ingress-bootstrap.kafka-proxy.svc.cluster.local
+  secretName: my-cluster-server-certificate
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS8
+    size: 4096
+  dnsNames:
+    - my-cluster-my-ingress-bootstrap.kafka-proxy.svc.cluster.local
+    - my-cluster-my-ingress-0.kafka-proxy.svc.cluster.local
+    - my-cluster-my-ingress-1.kafka-proxy.svc.cluster.local
+    - my-cluster-my-ingress-2.kafka-proxy.svc.cluster.local
+  usages:
+    - server auth
+  issuerRef:
+    name: selfsigned-issuer
+    kind: Issuer
+    group: cert-manager.io
