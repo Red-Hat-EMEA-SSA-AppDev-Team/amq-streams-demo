@@ -10,34 +10,20 @@
   * Red Hat Streams for Apache Kafka Operator
   * Red Hat Streams for Apache Kafka Proxy Operator
   * Cert-manager Operator for Red Hat OpenShift
+* Kafka cluster installed with no authentication or authorization, as per the instruction in this repository.
 
 ## TLS certificates
 
-This example uses TLS between clients and the proxy. Cert-manager creates the
-required certificates using a self-signed issuer to keep the setup simple. A
-self-signed issuer is not suitable for production use.
+This example uses TLS between clients and the proxy. The Kustomization creates
+the required certificates using a namespace-scoped self-signed issuer to keep
+the setup simple. A self-signed issuer is not suitable for production use.
 
-## Certificate management
+## Cert-manager
 
-1. Check that the **cert-manager** is running:
+Check that **cert-manager** is running:
 
 ```sh
 oc get pods -n cert-manager
-```
-
-2. Create a self-signed `ClusterIssuer`. A `ClusterIssuer` is available
-cluster-wide, so cert-manager can issue self-signed certificates in any
-namespace without per-namespace setup.
-
-```bash
-cat <<EOF | oc apply -f -
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: selfsigned-issuer
-spec:
-  selfSigned: {}
-EOF
 ```
 
 ## Proxy setup
@@ -108,13 +94,13 @@ oc wait -n kafka-proxy certificate/my-cluster-server-certificate \
 4. Produce records to the topic:
 
    ```sh
-   printf 'IBM:100\nAPPLE:99\n' | oc run -n kafka-proxy -qi proxy-producer --image=registry.redhat.io/amq-streams/kafka-42-rhel9:3.2.2-7 --rm=true --restart=Never -- ./bin/kafka-console-producer.sh --bootstrap-server "${BOOTSTRAP_SERVER}" --topic trades --producer-property ssl.truststore.type=PEM --producer-property security.protocol=SSL --producer-property ssl.truststore.certificates="${CA}"
+   printf 'IBM:100\nAPPLE:99\n' | oc run -n kafka-proxy -qi proxy-producer --image=registry.redhat.io/amq-streams/kafka-42-rhel9:3.2.2-7 --rm=true --restart=Never -- ./bin/kafka-console-producer.sh --bootstrap-server "${BOOTSTRAP_SERVER}" --topic trades --producer-property ssl.truststore.type=PEM --producer-property security.protocol=SSL --producer-property ssl.truststore.certificates="$CA"
    ```
 
 5. Consume records through the proxy:
 
    ```sh
-   oc run -n kafka-proxy proxy-consumer -qi --image=registry.redhat.io/amq-streams/kafka-42-rhel9:3.2.2-7 --rm=true --restart=Never -- ./bin/kafka-console-consumer.sh --bootstrap-server "${BOOTSTRAP_SERVER}" --topic trades --from-beginning --timeout-ms 10000 --command-property ssl.truststore.type=PEM --command-property security.protocol=SSL --command-property ssl.truststore.certificates="${CA}"
+   oc run -n kafka-proxy proxy-consumer -qi --image=registry.redhat.io/amq-streams/kafka-42-rhel9:3.2.2-7 --rm=true --restart=Never -- ./bin/kafka-console-consumer.sh --bootstrap-server "${BOOTSTRAP_SERVER}" --topic trades --from-beginning --timeout-ms 10000 --command-property ssl.truststore.type=PEM --command-property security.protocol=SSL --command-property ssl.truststore.certificates="$CA"
    ```   
 
 ## Install Key Management Service (KMS)
@@ -204,12 +190,12 @@ existing records in `trades`:
 
 ```sh
 MESSAGE="encryption-check-$(date +%s)"
-printf '%s\n' "${MESSAGE}" | oc run -n kafka-proxy -qi encrypted-producer \
+printf '%s\n' "$MESSAGE" | oc run -n kafka-proxy -qi encrypted-producer \
   --image=registry.redhat.io/amq-streams/kafka-42-rhel9:3.2.2-7 --rm=true --restart=Never -- \
   ./bin/kafka-console-producer.sh --bootstrap-server "${BOOTSTRAP_SERVER}" --topic trades \
   --producer-property ssl.truststore.type=PEM \
   --producer-property security.protocol=SSL \
-  --producer-property ssl.truststore.certificates="${CA}"
+  --producer-property ssl.truststore.certificates="$CA"
 ```
 
 Consume through the proxy. The filter decrypts the record, so the marker is
@@ -222,7 +208,7 @@ oc run -n kafka-proxy -qi encrypted-proxy-consumer \
   --from-beginning --timeout-ms 10000 \
   --command-property ssl.truststore.type=PEM \
   --command-property security.protocol=SSL \
-  --command-property ssl.truststore.certificates="${CA}" | grep -F "${MESSAGE}"
+  --command-property ssl.truststore.certificates="$CA" | grep -F "$MESSAGE"
 ```
 
 To verify that the broker stores ciphertext, consume the same topic directly,
@@ -236,7 +222,7 @@ oc run -n my-kafka -qi encrypted-direct-consumer \
   --image=registry.redhat.io/amq-streams/kafka-42-rhel9:3.2.2-7 --rm=true --restart=Never -- \
   ./bin/kafka-console-consumer.sh \
   --bootstrap-server my-cluster-kafka-bootstrap.my-kafka.svc.cluster.local:9092 \
-  --topic trades --from-beginning --timeout-ms 10000 | grep -Fq "${MESSAGE}"
+  --topic trades --from-beginning --timeout-ms 10000 | grep -Fq "$MESSAGE"
 statuses=("${PIPESTATUS[@]}")
 
 if [ "${statuses[0]}" -ne 0 ]; then
@@ -279,12 +265,5 @@ Finally, remove the local Vault tokens:
 
 ```sh
 rm -f vault.root.token vault.encryption.token
-```
-
-If `selfsigned-issuer` was created solely for this demo and is not used by
-other namespaces, remove the cluster-scoped issuer as well:
-
-```sh
-oc delete clusterissuer selfsigned-issuer --ignore-not-found
 ```
 
