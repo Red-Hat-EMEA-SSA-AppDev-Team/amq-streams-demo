@@ -78,7 +78,7 @@ oc wait -n kafka-proxy certificate/my-cluster-server-certificate \
 
 1. Wait for the virtual-cluster ingress to receive a bootstrap address:
    ```sh
-   oc wait  -n kafka-proxy virtualkafkacluster my-cluster --for=jsonpath='{.status.ingresses[0].bootstrapServer}'
+   oc wait -n kafka-proxy virtualkafkacluster my-cluster --for=jsonpath='{.status.ingresses[0].bootstrapServer}'
    ```
 
 2. Store the bootstrap address:
@@ -94,13 +94,13 @@ oc wait -n kafka-proxy certificate/my-cluster-server-certificate \
 4. Produce records to the topic:
 
    ```sh
-   printf 'IBM:100\nAPPLE:99\n' | oc run -n kafka-proxy -qi proxy-producer --image=registry.redhat.io/amq-streams/kafka-42-rhel9:3.2.2-7 --rm=true --restart=Never -- ./bin/kafka-console-producer.sh --bootstrap-server "${BOOTSTRAP_SERVER}" --topic trades --producer-property ssl.truststore.type=PEM --producer-property security.protocol=SSL --producer-property ssl.truststore.certificates="$CA"
+   printf 'IBM:100\nAPPLE:99\n' | oc run -n kafka-proxy -qi proxy-producer --image=registry.redhat.io/amq-streams/kafka-42-rhel9:3.2.2-7 --rm=true --restart=Never -- ./bin/kafka-console-producer.sh --bootstrap-server "$BOOTSTRAP_SERVER" --topic trades --producer-property ssl.truststore.type=PEM --producer-property security.protocol=SSL --producer-property ssl.truststore.certificates="$CA"
    ```
 
 5. Consume records through the proxy:
 
    ```sh
-   oc run -n kafka-proxy proxy-consumer -qi --image=registry.redhat.io/amq-streams/kafka-42-rhel9:3.2.2-7 --rm=true --restart=Never -- ./bin/kafka-console-consumer.sh --bootstrap-server "${BOOTSTRAP_SERVER}" --topic trades --from-beginning --timeout-ms 10000 --command-property ssl.truststore.type=PEM --command-property security.protocol=SSL --command-property ssl.truststore.certificates="$CA"
+   oc run -n kafka-proxy proxy-consumer -qi --image=registry.redhat.io/amq-streams/kafka-42-rhel9:3.2.2-7 --rm=true --restart=Never -- ./bin/kafka-console-consumer.sh --bootstrap-server "$BOOTSTRAP_SERVER" --topic trades --from-beginning --timeout-ms 10000 --command-property ssl.truststore.type=PEM --command-property security.protocol=SSL --command-property ssl.truststore.certificates="$CA"
    ```   
 
 ## Install Key Management Service (KMS)
@@ -117,34 +117,29 @@ oc wait -n kafka-proxy certificate/my-cluster-server-certificate \
    helm install vault hashicorp/vault --create-namespace --namespace=vault --version v0.31.0 --values k8s/vault/helm-dev-values.yaml --set server.dev.devRootToken=$VAULT_TOKEN --wait
    ```
 
-3. Set `VAULT_ADDR` to the new instance:
-   ```
-   export VAULT_ADDR=$(oc get route -n vault vault --template='https://{{.spec.host}}')
-   ```
-
-4. Enable the Transit secrets engine:
+3. Enable the Transit secrets engine:
    ```sh
    oc exec -n vault vault-0 -- vault secrets enable transit
    ```
 
-5. Log in to Vault:
+4. Log in to Vault:
    ```sh
    oc exec -n vault vault-0 -- vault login $(cat vault.root.token)
    ```
 
-6. Write the policy from the file:
+5. Write the policy from the file:
 
    Note: Since the policy file is on your local machine, pipe its content directly into the pod:
    ```sh
    cat k8s/vault/proxy_encryption_filter_policy.hcl | oc exec -i -n vault vault-0 -- vault policy write proxy_encryption_filter_policy -
    ```
 
-7. Create a token for the proxy:
+6. Create a token for the proxy:
    ```sh
    oc exec -n vault vault-0 -- vault token create -display-name "proxy encryption filter" -policy=proxy_encryption_filter_policy -no-default-policy -orphan -field=token > vault.encryption.token
    ```
 
-8. Create a secret containing the Vault token:
+7. Create a secret containing the Vault token:
    ```sh
    oc create secret generic proxy-encryption-kms-secret -n kafka-proxy --from-file=encryption-vault-token.txt=vault.encryption.token
    ```
@@ -242,7 +237,7 @@ Delete the `trades` topic before removing the proxy. This topic is created on
 the backend Kafka cluster, so deleting the proxy does not remove it:
 
 ```sh
-oc exec -n my-kafka my-cluster-kafka-0 -- \
+oc exec -n my-kafka my-cluster-broker-0 -- \
   bin/kafka-topics.sh --bootstrap-server localhost:9092 --delete --topic trades
 ```
 
