@@ -1,0 +1,38 @@
+#
+# Copyright Kroxylicious Authors.
+#
+# Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
+#
+
+---
+kind: KafkaProtocolFilter
+apiVersion: kroxylicious.io/v1alpha1
+metadata:
+  name: encryption
+  namespace: kafka-proxy
+spec:
+  type: io.kroxylicious.filter.encryption.RecordEncryption
+  configTemplate:
+    selector: TemplateKekSelector
+    selectorConfig:
+      template: "KEK_$(topicName)"
+    unresolvedKeyPolicy: REJECT
+    # #######################################
+    # User: uncomment this section if you are using Vault.
+    kms: VaultKmsService
+    kmsConfig:
+     vaultTransitEngineUrl: http://vault.vault.svc.cluster.local:8200/v1/transit
+     vaultToken:
+       passwordFile: ${secret:proxy-encryption-kms-secret:encryption-vault-token.txt}
+    # #######################################
+    # User: uncomment this section if you are using AWS.
+    # Change region identifier in the region and endpointUrl if you are using a region other than us-east-1.
+    #kms: AwsKmsService
+    #kmsConfig:
+    #  endpointUrl: https://kms.us-east-1.amazonaws.com
+    #  region: us-east-1
+    #  longTermCredentials:
+    #    accessKeyId:
+    #      passwordFile: ${secret:proxy-encryption-kms-secret:accessKeyId.txt}
+    #    secretAccessKey:
+    #      passwordFile: ${secret:proxy-encryption-kms-secret:secretAccessKey.txt}

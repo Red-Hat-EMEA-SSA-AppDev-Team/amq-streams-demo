@@ -1,0 +1,19 @@
+global:
+  openshift: true
+server:
+  image:
+    repository: docker.io/hashicorp/vault
+    tag: 1.19.0
+  dev:
+    enabled: true
+    devRootToken: myroottoken # steps in PREPARE_KMS.md override this value
+  ha:
+    enabled: false
+  updateStrategyType: RollingUpdate
+  route:
+    enabled: true
+    host: ""
+    tls:
+      termination: edge
+injector:
+  enabled: false
